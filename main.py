@@ -329,7 +329,7 @@ def loading_screen(screen, mp):
 
 #>>>>>> Sounds <<<<<<
 town_music = pygame.mixer.Sound('assets/music/town_music.wav')
-main_menu_music = pygame.mixer.Sound('assets/music/main_menu_loop.wav')
+main_menu_music = pygame.mixer.Sound('assets/music/main_menu_loop2.wav')
 sound_sword_slash = pygame.mixer.Sound('assets/music/sword_slash.mp3')
 sound_leveling_up = pygame.mixer.Sound('assets/music/leveling_up.wav')
 #>>>>>> End - Sounds <<<<<<
