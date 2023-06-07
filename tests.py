@@ -1,4 +1,4 @@
-#The Main Menu of the game
+#The Main AutoRPG python file
 import sys
 import pygame
 import time
@@ -55,7 +55,6 @@ def back_text_screen_blitting(screen, mp):
     text_back.blit_text(screen, mp)
     
 def redraw_screen(current_menu, music_playing, screen, mp, assets, state):
-    #state = ScreenBlittedState(screen, mp, assets)
     #Title screen:
     if current_menu == GameLoopState.MainMenu:
         state.title_screen_blit(mp)            
@@ -411,106 +410,96 @@ class ScreenBlittedState:
     def __init__(self, screen, assets):
         self.screen = screen
         self.assets = assets
+        self.back_text_for_many_places = MenuText("BACK", 170,720, assets.font_72)
         self.title_screen_text_items = [(MenuText("NEW GAME", 100,200, assets.font_72), GameLoopState.NewGame),
-                                        (MenuText("LOAD GAME", 88,259, assets.font_72), GameLoopState.LoadGame),
+                                        (MenuText("??????????", 88,259, assets.font_72), GameLoopState.MainMenu), #Supose to be "LOAD GAME"
                                         (MenuText("ABOUT", 154,318, assets.font_72), GameLoopState.AboutGame),
                                         (MenuText("EXIT", 179,377, assets.font_72), GameLoopState.Exit)]
+        self.new_game_screen_text_items = [(MenuText("START NEW GAME?", 33,200, assets.font_62), None), 
+                                            (MenuText("YES", 191,259, assets.font_62), GameLoopState.TownMainMenu),
+                                            (MenuText('NO', 204,318, assets.font_62), GameLoopState.MainMenu)]
+        self.about_screen_text_items = [(MenuText("BACK", 180,540, assets.font_72), GameLoopState.MainMenu)]
+        self.town_screen_text_items = [(MenuText("FACELESS MAN", 45,200, assets.font_72), GameLoopState.TownFacelessman), 
+                                       (MenuText("BATTLE", 144,259, assets.font_72), GameLoopState.TownBattle), 
+                                       (MenuText("CHARACTER", 81,318, assets.font_72), GameLoopState.TownCharacter), 
+                                       (MenuText("SHOP", 168,378, assets.font_72), GameLoopState.TownShop), 
+                                       (MenuText("MAIN MENU", 96,436, assets.font_72), GameLoopState.MainMenu)]
+        self.facelessman_screen_text_items = [((self.back_text_for_many_places), GameLoopState.TownMainMenu)]
+        self.battle_screen_text_items = [(MenuText("CRYPTS", 141,320, assets.font_72), GameLoopState.CryptsFighting), 
+                                         (MenuText("ORCISH VALLEY", 38,379, assets.font_72), GameLoopState.OrcishValleyFighting), 
+                                         (MenuText("FROZEN TUNDRA", 28,438, assets.font_72), GameLoopState.FrozenTundraFighting), 
+                                         (MenuText("DEMON WORLD", 46,497, assets.font_72), GameLoopState.DemonWorldFighting),
+                                         (self.back_text_for_many_places, GameLoopState.TownMainMenu),  
+                                         (MenuText("??????", 150,379, assets.font_72), GameLoopState.TownBattle), 
+                                         (MenuText("??????", 150,438, assets.font_72), GameLoopState.TownBattle), 
+                                         (MenuText("??????", 150,497, assets.font_72), GameLoopState.TownBattle)]
+        self.character_screen_text_items = [(MenuText("STATS", 187,370, assets.font_50), None), 
+                                            (MenuText("LEVEL", 60,416, assets.font_40), None), 
+                                            (MenuText("EXP", 60,447, assets.font_40), None), 
+                                            (MenuText("HEALTH", 60,478, assets.font_40), None), 
+                                            (MenuText("DAMAGE", 60,509, assets.font_40), None), 
+                                            (MenuText("DEFENCE", 60,540, assets.font_40), None), 
+                                            (MenuText("FREE POINTS", 60,571, assets.font_40), None), 
+                                            (MenuText("VITALITY", 60,602, assets.font_40), None), 
+                                            (MenuText("STRENGTH", 60,633, assets.font_40), None), 
+                                            ((self.back_text_for_many_places), GameLoopState.TownMainMenu)]
+        self.shop_screen_text_items = [((self.back_text_for_many_places), GameLoopState.TownMainMenu)]
+
+    #Method which goes thought the lists of texts and blits them:
     def blit_text_items(self, text_items, mp):
         for (text_item, _) in text_items:
             text_item.blit_text(self.screen, mp)
+
     def title_screen_blit(self, mp):
-        #--- Background
-            screen.blit(self.assets.scaled_main_menu_bg[0], self.assets.scaled_main_menu_bg[1])
-            self.blit_text_items(self.title_screen_text_items, mp)
+            screen.blit(self.assets.scaled_main_menu_bg[0], self.assets.scaled_main_menu_bg[1]) #Background
+            self.blit_text_items(self.title_screen_text_items, mp) #Texts
     
     def new_game_confirmation_screen_blit(self, mp):
-        #--- Background
-        screen.blit(self.assets.scaled_main_menu_bg[0], self.assets.scaled_main_menu_bg[1])
-        #--- Start New Game?
-        text_start_newgame.blit_text(self.screen, mp)
-        #--- Yes
-        text_yes.blit_text(self.screen, mp)
-        #--- No
-        text_no.blit_text(self.screen, mp)   
+        screen.blit(self.assets.scaled_main_menu_bg[0], self.assets.scaled_main_menu_bg[1]) #Background
+        self.blit_text_items(self.new_game_screen_text_items, mp) #Texts
     
     def about_screen_blit(self, mp):
-        #--- Background
-        screen.blit(self.assets.scaled_about_bg[0], self.assets.scaled_about_bg[1])
-        #--- Back
-        text_back_about_screen_special.blit_text(self.screen, mp)
+        screen.blit(self.assets.scaled_about_bg[0], self.assets.scaled_about_bg[1]) #Background
+        self.blit_text_items(self.about_screen_text_items, mp) #Texts
     
     def town_screen_blit(self, mp):
-        #--- Background
-        screen.blit(self.assets.scaled_town_bg_1[0], self.assets.scaled_town_bg_1[1])
-        #--- Faceless Man
-        text_faceless_man.blit_text(self.screen, mp)
-        #--- Battle
-        text_battle.blit_text(self.screen, mp)
-        #--- Character
-        text_character.blit_text(self.screen, mp)
-        #--- Shop
-        text_shop.blit_text(self.screen, mp)
-        #--- Main Menu
-        text_main_menu.blit_text(self.screen, mp)
+        screen.blit(self.assets.scaled_town_bg_1[0], self.assets.scaled_town_bg_1[1]) #Background
+        self.blit_text_items(self.town_screen_text_items, mp) #Texts
 
     def facelessman_screen_blit(self, mp):
-        #--- Background
-        screen.blit(self.assets.scaled_faceless_man_bg[0], self.assets.scaled_faceless_man_bg[1])
-        #--- Back
-        back_text_screen_blitting(self.screen, mp)
+        screen.blit(self.assets.scaled_faceless_man_bg[0], self.assets.scaled_faceless_man_bg[1]) #Background
+        self.blit_text_items(self.facelessman_screen_text_items, mp) #Texts
     
     def battle_screen_blit(self, mp):
         #--- Background
         screen.blit(self.assets.scaled_gate_guard_bg[0], self.assets.scaled_gate_guard_bg[1])
         #--- Crypts
-        text_crypts.blit_text(self.screen, mp)
+        self.battle_screen_text_items[0][0].blit_text(self.screen, mp)
         #--- Orcish Valley
         if is_crypts_finished == True:  
-            text_orcish_valley.blit_text(self.screen, mp)
+            self.battle_screen_text_items[1][0].blit_text(self.screen, mp)
         else:
-            text_question_marks_OrcVal.blit_text(self.screen, mp)
+            self.battle_screen_text_items[5][0].blit_text(self.screen, mp)
         #--- Frozen Tundra
         if is_orcish_valley_finished == True:
-            text_frozen_tundra.blit_text(self.screen, mp)
+            self.battle_screen_text_items[2][0].blit_text(self.screen, mp)
         else:
-            text_question_marks_FroTund.blit_text(self.screen, mp)
+            self.battle_screen_text_items[6][0].blit_text(self.screen, mp)
         #--- Demon World
         if is_frozen_tundra_finished == True:
-            text_demon_world.blit_text(self.screen, mp)
+            self.battle_screen_text_items[3][0].blit_text(self.screen, mp)
         else:
-            text_question_marks_DemWorl.blit_text(self.screen, mp)
+            self.battle_screen_text_items[7][0].blit_text(self.screen, mp)
         #--- Back
-        back_text_screen_blitting(self.screen, mp)
+        self.battle_screen_text_items[4][0].blit_text(self.screen, mp)
 
     def character_screen_blit(self, mp):
-        #--- Background
-        screen.blit(self.assets.scaled_human_3_bg[0], self.assets.scaled_human_3_bg[1])
-        #--- Stats
-        text_stats.blit_text(self.screen, mp)
-        #--- Level
-        text_level.blit_text(self.screen, mp)
-        #--- Exp
-        text_exp.blit_text(self.screen, mp)
-        #--- Health
-        text_health.blit_text(self.screen, mp)
-        #--- Damage
-        text_damage.blit_text(self.screen, mp)
-        #--- Defence
-        text_defence.blit_text(self.screen, mp)
-        #--- Free Points
-        text_free_points.blit_text(self.screen, mp)
-        #--- Vitality
-        text_vitality.blit_text(self.screen, mp)
-        #--- Strength
-        text_strength.blit_text(self.screen, mp)
-        #--- Back
-        back_text_screen_blitting(self.screen, mp) 
+        screen.blit(self.assets.scaled_human_3_bg[0], self.assets.scaled_human_3_bg[1]) #Backgrounds
+        self.blit_text_items(self.character_screen_text_items, mp) #Texts
     
     def shop_screen_blit(self, mp):
-        #--- Background
-        screen.blit(self.assets.scaled_shop_bg[0], self.assets.scaled_shop_bg[1]) 
-        #--- Back
-        back_text_screen_blitting(self.screen, mp) 
+        screen.blit(self.assets.scaled_shop_bg[0], self.assets.scaled_shop_bg[1]) #Backgrounds
+        self.blit_text_items(self.shop_screen_text_items, mp) #Texts
 
 class MenuText:
     
@@ -531,14 +520,13 @@ class MenuText:
         #calculating range values for x and y:
         self.xPos_r = (xPos, (xPos + text_rect[2]))
         self.yPos_r = (yPos, (yPos + text_rect[3]))
+
     def blit_text(self, screen, mp):
         #blitting text
         self.blit_shadow = screen.blit(self.text_shadow[0], self.text_shadow[1])
         self.blit_white = screen.blit(self.text_white[0], self.text_white[1])
-        #checking if mouse is over text
-        if self.is_mouse_over(mp):
-            #if True, bliting red text over white
-            screen.blit(self.text_red[0], self.text_white[1])
+        if self.is_mouse_over(mp): #checking if mouse is over text
+            screen.blit(self.text_red[0], self.text_white[1]) #if True, bliting red text over white
     
     def is_mouse_over(self, mp):
         return (mp[0] in range(self.xPos_r[0], self.xPos_r[1]) and mp[1] in range(self.yPos_r[0], self.yPos_r[1]))
@@ -702,75 +690,31 @@ class Assets:
         new_size_and_rect_in_a_lists = [changed_size, image_rect]
         return new_size_and_rect_in_a_lists
 
-#>>>>>> End - Custom Classes <<<<<<   
+#>>>>>> End - Custom Classes <<<<<< 
+
+#>>>>>> Game Progresion Switches <<<<<<
+is_crypts_finished = False
+is_orcish_valley_finished = False
+is_frozen_tundra_finished = False
+is_demon_world_finished = False
+attack_turn = 0
+#>>>>>> End - Game Progresion Switches <<<<<<  
 
 #>>>>>> Instances <<<<<<
 assets = Assets()
 state = ScreenBlittedState(screen, assets)
+combat_instance = Combat(screen, enemy_current_hp, 
+                        hero_current_hp, hero_damage, enemy_damage, hero_defence, enemy_defence, 
+                        assets.scaled_player_attack_slash, assets.scaled_enemy_attack_slash, hero_total_hp, enemy_total_hp,
+                        is_crypts_finished, is_orcish_valley_finished, assets)
 #>>>>>> End - Instances <<<<<<
 
 #>>>>>> Texts: <<<<<<
 #Creating texts, setting coordinates and fonts:
-# #--- New Game
-# text_new_game = MenuText("NEW GAME", 100,200, assets.font_72)
-# #--- Load Game
-# text_load_game = MenuText("LOAD GAME", 88,259, assets.font_72)
-# #--- About
-# text_about = MenuText("ABOUT", 154,318, assets.font_72)
-# #--- Exit
-# text_exit = MenuText("EXIT", 179,377, assets.font_72)
-#--- Start New Game?
-text_start_newgame = MenuText("START NEW GAME?", 33,200, assets.font_62)
-#--- Yes
-text_yes = MenuText("YES", 191,259, assets.font_62)
-#--- No
-text_no = MenuText('NO', 204,318, assets.font_62)
-#-!- Back -> about screen special
-text_back_about_screen_special = MenuText("BACK", 180,540, assets.font_72)
 #-!- Back -> for general use
 text_back = MenuText("BACK", 170,720, assets.font_72)
 #--- Loading..
 text_loading = MenuText("LOADING..", 10, 726, assets.font_72)
-#--- Faceless Man
-text_faceless_man = MenuText("FACELESS MAN", 45,200, assets.font_72)
-#--- Battle
-text_battle = MenuText("BATTLE", 144,259, assets.font_72)
-#--- Character
-text_character = MenuText("CHARACTER", 81,318, assets.font_72)
-#--- Shop
-text_shop = MenuText("SHOP", 168,378, assets.font_72)
-#--- Main Menu
-text_main_menu = MenuText("MAIN MENU", 96,436,    assets.font_72)
-#--- Crypts
-text_crypts = MenuText("CRYPTS", 141,320, assets.font_72)
-#--- Orcish Valley
-text_orcish_valley = MenuText("ORCISH VALLEY", 38,379, assets.font_72)
-#--- Frozen Tundra
-text_frozen_tundra = MenuText("FROZEN TUNDRA", 28,438, assets.font_72)
-#--- Demon World
-text_demon_world = MenuText("DEMON WORLD", 46,497, assets.font_72)
-#--- ??????
-text_question_marks_OrcVal = MenuText("??????", 150,379, assets.font_72)
-text_question_marks_FroTund = MenuText("??????", 150,438, assets.font_72)
-text_question_marks_DemWorl = MenuText("??????", 150,497, assets.font_72)
-#--- Stats
-text_stats = MenuText("STATS", 187,370, assets.font_50)
-#--- Level
-text_level = MenuText("LEVEL", 60,416, assets.font_40)
-#--- Exp
-text_exp = MenuText("EXP", 60,447, assets.font_40)
-#--- Health
-text_health = MenuText("HEALTH", 60,478, assets.font_40)
-#--- Damage
-text_damage = MenuText("DAMAGE", 60,509, assets.font_40)
-#--- Defence
-text_defence = MenuText("DEFENCE", 60,540, assets.font_40)
-#--- Free Points
-text_free_points = MenuText("FREE POINTS", 60,571, assets.font_40)
-#--- Vitality
-text_vitality = MenuText("VITALITY", 60,602, assets.font_40)
-#--- Strength
-text_strength = MenuText("STRENGTH", 60,633, assets.font_40)
 #--- Hero Health bar
 text_hero_current_hp = MenuText("HERO HP", 58,20, assets.font_40)
 #--- Enemey Health bar
@@ -779,14 +723,6 @@ text_enemy_current_hp = MenuText("ENEMY HP", 285,20, assets.font_40)
 #test = assets.font_72.render("ORCISH VALLEY", True, (color_black))
 #print(test.get_size())
 #>>>>>> End - Texts <<<<<<
-
-#>>>>>> Game Progresion Switches <<<<<<
-is_crypts_finished = True
-is_orcish_valley_finished = False
-is_frozen_tundra_finished = False
-is_demon_world_finished = False
-attack_turn = 0
-#>>>>>> End - Game Progresion Switches <<<<<<
 
 #>>>>>> Loops <<<<<<
 #Main loop:
@@ -803,10 +739,7 @@ my_event = pygame.USEREVENT + 1
 pygame.time.set_timer(my_event, 5)
 start_time = pygame.time.get_ticks()
 #>>>>>> End - Time/FPS tracking/settting <<<<<<
-combat_instance = Combat(screen, enemy_current_hp, 
-                        hero_current_hp, hero_damage, enemy_damage, hero_defence, enemy_defence, 
-                        assets.scaled_player_attack_slash, assets.scaled_enemy_attack_slash, hero_total_hp, enemy_total_hp,
-                        is_crypts_finished, is_orcish_valley_finished, assets)
+
 #>>>>>> Programs logic Loop <<<<<<
 while program_running_loop:
     #---- Music ----
@@ -824,6 +757,8 @@ while program_running_loop:
         current_time = pygame.time.get_ticks()
         if event.type == pygame.QUIT:
             exit_game_actions(screen, assets)
+        elif current_menu == GameLoopState.Exit:
+            exit_game_actions(screen, assets)
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             exit_game_actions(screen, assets)
         elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -840,90 +775,52 @@ while program_running_loop:
                     pygame.mixer.unpause()
             #>>>>>> Main Menu screen clicking <<<<<< ----------------------------------
             if current_menu == GameLoopState.MainMenu:
-                #New Game:
-                # if m_c_p[0] in range(102,380) and m_c_p[1] in range(200,243):
-                #     current_menu = GameLoopState.NewGame
-                # #Load Game:
-                # elif m_c_p[0] in range(90,394) and m_c_p[1] in range(259,302):
-                #     print("Not Fisnished Feature")
-                # #About:
-                # elif m_c_p[0] in range(154,327) and m_c_p[1] in range(318,361):
-                #     current_menu = GameLoopState.AboutGame
-                # #Exit:
-                # elif m_c_p[0] in range(179,301) and m_c_p[1] in range(377,420):
                 for (text_item, menu_state) in state.title_screen_text_items:
                     if text_item.is_mouse_over(m_c_p):
-                        current_menu = menu_state    
-            elif current_menu == GameLoopState.Exit:
-                exit_game_actions(screen, assets)
+                        current_menu = menu_state
             #---- New Game Y/N confirmation screen ----
             elif current_menu == GameLoopState.NewGame:
-                #Yes:
-                if m_c_p[0] in range(193,292) and m_c_p[1] in range(259,302):
-                    loading_screen(screen, mp, assets)
-                    current_menu = GameLoopState.TownMainMenu
-                #No:
-                elif m_c_p[0] in range(204,277) and m_c_p[1] in range(318,361):
-                    current_menu = GameLoopState.MainMenu
+                for (text_item, menu_state) in state.new_game_screen_text_items:
+                    if text_item.is_mouse_over(m_c_p):
+                        current_menu = menu_state
             #---- About screen ----        
             elif current_menu == GameLoopState.AboutGame:
-                #Back:
-                if m_c_p[0] in range(180,321) and m_c_p[1] in range(540,583):
-                    current_menu = GameLoopState.MainMenu
+                for (text_item, menu_state) in state.about_screen_text_items:
+                    if text_item.is_mouse_over(m_c_p):
+                        current_menu = menu_state
             #>>>>>> Town Screen clicking <<<<<< ---------------------------------------
             elif current_menu == GameLoopState.TownMainMenu:
-                #Faceless Man:
-                if m_c_p[0] in range(45,435) and m_c_p[1] in range(200,243):
-                    current_menu = GameLoopState.TownFacelessman
-                #Battle:
-                elif m_c_p[0] in range(144,336) and m_c_p[1] in range(259,302):
-                    current_menu = GameLoopState.TownBattle
-                #Character:
-                elif m_c_p[0] in range(81,400) and m_c_p[1] in range(318,361):
-                    current_menu = GameLoopState.TownCharacter
-                #Shop:
-                elif m_c_p[0] in range(168,312) and m_c_p[1] in range(378,421):
-                    current_menu = GameLoopState.TownShop
-                #Main Menu:
-                elif m_c_p[0] in range(96,385) and m_c_p[1] in range(436,479):
-                    pygame.mixer.stop()
-                    loading_screen(screen, mp, assets)
-                    current_menu = GameLoopState.MainMenu
+                for (text_item, menu_state) in state.town_screen_text_items:
+                    if text_item.is_mouse_over(m_c_p):
+                        current_menu = menu_state
             #--- Faceless Man screen clicking ---
             elif current_menu == GameLoopState.TownFacelessman:
-                #Back:
-                if m_c_p[0] in range(170,311) and m_c_p[1] in range(720,763):
-                    current_menu = GameLoopState.TownMainMenu
+                for (text_item, menu_state) in state.facelessman_screen_text_items:
+                    if text_item.is_mouse_over(m_c_p):
+                        current_menu = menu_state
             #--- Battle screen clicking: ---
             elif current_menu == GameLoopState.TownBattle:
-                #Crypts:
-                if m_c_p[0] in range(141,340) and m_c_p[1] in range(320,369):
-                    screen.blit(assets.scaled_portal_3_bg[0], assets.scaled_portal_3_bg[1])
-                    pygame.display.flip()
-                    time.sleep(0.7)
-                    current_menu = GameLoopState.CryptsFighting
-                    combat_instance.update(mp, current_menu) 
-                #Orcish Valley:
-                elif is_crypts_finished == True:
-                    if m_c_p[0] in range(38,442) and m_c_p[1] in range(379,428):
-                        screen.blit(assets.scaled_portal_0_bg[0], assets.scaled_portal_0_bg[1])
-                        pygame.display.flip()
-                        time.sleep(0.7)
-                        current_menu = GameLoopState.OrcishValleyFighting
-                        combat_instance.update(mp, current_menu)
-                #Back:
-                elif m_c_p[0] in range(170,311) and m_c_p[1] in range(720,763):
-                    current_menu = GameLoopState.TownMainMenu
+                for (text_item, menu_state) in state.battle_screen_text_items[:5]:
+                    if text_item.is_mouse_over(m_c_p):
+                        if menu_state == GameLoopState.OrcishValleyFighting and is_crypts_finished == False:
+                            current_menu = GameLoopState.TownBattle
+                        elif menu_state == GameLoopState.FrozenTundraFighting and is_orcish_valley_finished == False:
+                            current_menu = GameLoopState.TownBattle
+                        elif menu_state == GameLoopState.DemonWorldFighting and is_frozen_tundra_finished == False:
+                            current_menu = GameLoopState.TownBattle
+                        else:
+                            current_menu = menu_state
+                combat_instance.update(mp, current_menu)
             #--- Character screen clicking: ---
             elif current_menu == GameLoopState.TownCharacter:
-                #Back:
-                if m_c_p[0] in range(170,311) and m_c_p[1] in range(720,763):
-                    current_menu = GameLoopState.TownMainMenu
+                for (text_item, menu_state) in state.character_screen_text_items:
+                    if text_item.is_mouse_over(m_c_p):
+                        current_menu = menu_state
             #--- Shop screen clicking ---
             elif current_menu == GameLoopState.TownShop:
-                #Back
-                if m_c_p[0] in range(170,311) and m_c_p[1] in range(720,763):
-                    current_menu = GameLoopState.TownMainMenu
+                for (text_item, menu_state) in state.shop_screen_text_items:
+                    if text_item.is_mouse_over(m_c_p):
+                        current_menu = menu_state
         #--- All fights logic and blitting -----------------------------------------------<<<<<<
         if event.type == my_event:
             #--- Crypts fighting ---
