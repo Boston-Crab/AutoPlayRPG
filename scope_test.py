@@ -1,24 +1,35 @@
+class Animal:
 
-# vars = {}
-# def fb(var_dict):
-#     b = 0
-#     print(b,var_dict["a"])
+    # attribute and method of the parent class
+    name = ""
+    
+    def eat(self):
+        print("I eat")
 
-# fb(vars)
-# vars["a"] = 1
+# inherit from Animal
+class Dog(Animal):
 
-#############
-def fb2():
-    c = 2
-    def fb():
-        b = 0
-        print(b,a,c)
-    fb()
+    # new method in subclass
+    def eat(self):
+        super().eat()
+        # access name attribute of superclass using self
+        print("bones")
 
+# create an object of the subclass
+labrador = Dog()
 
-def main():
-    a = 1
-    fb2()
+# access superclass attribute and method 
+labrador.name = "Rohu"
+labrador.eat()
 
-if __name__ == "__main__":
-    main()
+# call subclass method 
+#labrador.display()
+
+#To try NOTE
+#vertical lay out container
+#1st. make a widget class that has a blit funtion without implementation
+#2nd. make a vertical layout container, which inherits from a widget, it has a function to add more widgets to it
+#and it overrides blit funtion of the widget. In this blit funtion it calls blit functions of all the widgets inside of this container.
+#3rd. in the add function, draw coordinates of the widget being added will have to be recalculated.
+#4th. all widgets in the container layout will have to centered vertically and horizontaly. 
+#about inheretance: https://www.programiz.com/python-programming/inheritance

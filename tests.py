@@ -353,7 +353,7 @@ class Combat:
         whose_turn = self.attack_turn_switch
         return whose_turn  
 
-    def update_hero_stats_variables_integers(self):
+    def get_updated_hero_stats(self):
         return self.hero_current_hp  
     
 def exit_game_actions(screen, assets):
@@ -397,7 +397,8 @@ class ScreenBlittedState:
                                          (MenuText("??????", 150,379, assets.font_72), GameLoopState.TownBattle), 
                                          (MenuText("??????", 150,438, assets.font_72), GameLoopState.TownBattle), 
                                          (MenuText("??????", 150,497, assets.font_72), GameLoopState.TownBattle)]
-        self.character_screen_text_items = [(MenuText("STATS", 187,370, assets.font_50), GameLoopState.TownCharacter), 
+        self.character_screen_text_items = [((self.back_text_for_many_places), GameLoopState.TownMainMenu),
+                                            (MenuText("STATS", 187,370, assets.font_50), GameLoopState.TownCharacter), 
                                             (MenuText("LEVEL", 60,416, assets.font_40), GameLoopState.TownCharacter), 
                                             (MenuText("EXP", 60,447, assets.font_40), GameLoopState.TownCharacter), 
                                             (MenuText("HEALTH", 60,478, assets.font_40), GameLoopState.TownCharacter), 
@@ -405,18 +406,22 @@ class ScreenBlittedState:
                                             (MenuText("DEFENCE", 60,540, assets.font_40), GameLoopState.TownCharacter), 
                                             (MenuText("FREE POINTS", 60,571, assets.font_40), GameLoopState.TownCharacter), 
                                             (MenuText("VITALITY", 60,602, assets.font_40), GameLoopState.TownCharacter), 
-                                            (MenuText("STRENGTH", 60,633, assets.font_40), GameLoopState.TownCharacter),
-                                            (MenuText(str(hero_level), 300,414, assets.font_40), GameLoopState.TownCharacter),
-                                            (MenuText(hero_exp_formated, 300,445, assets.font_40), GameLoopState.TownCharacter),
-                                            (MenuText(str(self.hero_hp_for_char_screen), 300,476, assets.font_40), GameLoopState.TownCharacter), 
-                                            (MenuText(str(hero_damage), 300,507, assets.font_40), GameLoopState.TownCharacter), 
-                                            (MenuText(str(hero_defence), 300,538, assets.font_40), GameLoopState.TownCharacter), 
-                                            (MenuText(str(hero_unsed_stat_points), 300,569, assets.font_40), GameLoopState.TownCharacter), 
-                                            (MenuText(str(hero_vitality), 300,600, assets.font_40), GameLoopState.TownCharacter), 
-                                            (MenuText(str(hero_strength), 300,631, assets.font_40), GameLoopState.TownCharacter), 
-                                            ((self.back_text_for_many_places), GameLoopState.TownMainMenu)]
+                                            (MenuText("STRENGTH", 60,633, assets.font_40), GameLoopState.TownCharacter)]
+        self.hero_level_index = len(self.character_screen_text_items)
+        self.character_screen_text_items.append((MenuText(str(hero_level), 300,414, assets.font_40), GameLoopState.TownCharacter))
+        self.character_screen_text_items.append((MenuText(hero_exp_formated, 300,445, assets.font_40), GameLoopState.TownCharacter))
+        self.hero_hp_for_char_screen_index = len(self.character_screen_text_items)
+        self.character_screen_text_items.append((MenuText(str(self.hero_hp_for_char_screen), 300,476, assets.font_40), GameLoopState.TownCharacter) )
+        self.character_screen_text_items.append((MenuText(str(hero_damage), 300,507, assets.font_40), GameLoopState.TownCharacter)) 
+        self.character_screen_text_items.append((MenuText(str(hero_defence), 300,538, assets.font_40), GameLoopState.TownCharacter)) 
+        self.character_screen_text_items.append((MenuText(str(hero_unsed_stat_points), 300,569, assets.font_40), GameLoopState.TownCharacter)) 
+        self.character_screen_text_items.append((MenuText(str(hero_vitality), 300,600, assets.font_40), GameLoopState.TownCharacter)) 
+        self.character_screen_text_items.append((MenuText(str(hero_strength), 300,631, assets.font_40), GameLoopState.TownCharacter))
+
         self.shop_screen_text_items = [((self.back_text_for_many_places), GameLoopState.TownMainMenu)]
         self.hp_bars_text_items = [MenuText("HERO HP", 58,20, assets.font_40), MenuText("ENEMY HP", 285,20, assets.font_40)]
+        #test = assets.font_72.render("ORCISH VALLEY", True, (color_black))
+        #print(test.get_size())
 
     #Method which goes throught the lists of texts and blits them:
     def blit_text_items(self, text_items, mp):
@@ -477,7 +482,7 @@ class ScreenBlittedState:
 
     def update_char_screen_stats_texts(self, hero_current_hp, hero_total_hp):
         self.hero_hp_for_char_screen = f"{hero_current_hp}/{hero_total_hp}"
-        self.character_screen_text_items[11] = (MenuText(str(self.hero_hp_for_char_screen), 300,476, self.assets.font_40), 
+        self.character_screen_text_items[self.hero_hp_for_char_screen_index] = (MenuText(str(self.hero_hp_for_char_screen), 300,476, self.assets.font_40), 
                                                 GameLoopState.TownCharacter)
 
 class MenuText:
@@ -682,7 +687,7 @@ def main():
     #>>>>>> End - Screen <<<<<<``
 
     #>>>>>> Game State/Progress tracking <<<<<<
-    game_finish_progress = {'crypts': False, 'orcish_valley': False, 'frozen_tundra': False, 'demon_world': False}
+    #game_finish_progress = {'crypts': False, 'orcish_valley': False, 'frozen_tundra': False, 'demon_world': False}
     #>>>>>> End - Game State/Progress tracking <<<<<<
 
     #>>>>>> Variables <<<<<<
@@ -744,17 +749,6 @@ def main():
                                         GameLoopState.TownCharacter: state.character_screen_text_items,
                                         GameLoopState.TownShop: state.shop_screen_text_items}
     #>>>>>> End - Dictionaries <<<<<<
-
-    #>>>>>> Texts: <<<<<<
-    #Creating texts, setting coordinates and fonts:
-    #--- Hero Health bar
-    text_hero_current_hp = MenuText("HERO HP", 58,20, assets.font_40)
-    #--- Enemey Health bar
-    text_enemy_current_hp = MenuText("ENEMY HP", 285,20, assets.font_40)
-    #Getting text rect size example:
-    #test = assets.font_72.render("ORCISH VALLEY", True, (color_black))
-    #print(test.get_size())
-    #>>>>>> End - Texts <<<<<<
 
     #>>>>>> Loops <<<<<<
     #Main loop:
@@ -836,14 +830,14 @@ def main():
                             combat_instance.all_characters_combat_movement_blitting('player', state.hp_bars_text_items[0],
                                                                                     state.hp_bars_text_items[1])
                             if combat_instance.returning_to_town_after_combat_conclusion() == True:
-                                hero_current_hp = combat_instance.update_hero_stats_variables_integers()
+                                hero_current_hp = combat_instance.get_updated_hero_stats()
                                 state.update_char_screen_stats_texts(hero_current_hp, hero_total_hp)
                                 current_menu = GameLoopState.TownMainMenu                    
                         elif combat_instance.main_game_loop_attack_turn_switcher() == True:
                             combat_instance.all_characters_combat_movement_blitting('enemy', state.hp_bars_text_items[0],
                                                                                     state.hp_bars_text_items[1])
                             if combat_instance.returning_to_town_after_combat_conclusion() == True:
-                                hero_current_hp = combat_instance.update_hero_stats_variables_integers()
+                                hero_current_hp = combat_instance.get_updated_hero_stats()
                                 state.update_char_screen_stats_texts(hero_current_hp, hero_total_hp)
                                 current_menu = GameLoopState.TownMainMenu
         redraw_screen(current_menu, music_playing, screen, mp, assets, state, is_crypts_finished,
