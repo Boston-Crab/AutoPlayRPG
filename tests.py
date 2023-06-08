@@ -5,56 +5,10 @@ import time
 import pygame.mixer
 from enum import Enum, auto
 
-pygame.init()
-pygame.mixer.init()
-
-#>>>>>> Screen <<<<<<
-screen_width = 480
-screen_height = 784
-screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption("Auto Battler")
-#>>>>>> End - Screen <<<<<<
-
-#>>>>>> Game State/Progress tracking <<<<<<
-game_finish_progress = {'crypts': False, 'orcish_valley': False, 'frozen_tundra': False, 'demon_world': False}
-#crypts_scenes_completion = [0,0,0]
-orcish_valley_scenes_completion = [0,0,0,0,0]
-#>>>>>> End - Game State/Progress tracking <<<<<<
-
-#>>>>>> Variables <<<<<<
-#--- Hero:
-hero_level = 1
-hero_exp = 0
-hero_total_hp = 300
-hero_current_hp = 300
-hero_damage = 10
-hero_defence = 10
-hero_unsed_stat_points = 0
-hero_vitality = 0
-hero_strength = 0
-#--- Enemy:
-enemy_total_hp = 50
-enemy_current_hp = 50
-enemy_damage = 20
-enemy_defence = 0
-#--- Colors:
-color_black = 0,0,0
-color_white = 255,255,255
-color_red = 255,0,0
-color_grey = 192,192,192
-color_yellow = 255,255,0
-color_green = 0,255,0
-#--- range() numbers:
-#For music mute button:
-r_0_0 = 0,0
-#>>>>>> End - Variables <<<<<<
-
 #>>>>>> Custom Functions <<<<<<
-
-def back_text_screen_blitting(screen, mp):
-    text_back.blit_text(screen, mp)
-    
-def redraw_screen(current_menu, music_playing, screen, mp, assets, state):
+def redraw_screen(current_menu, music_playing, screen, mp, assets, state, is_crypts_finished,
+                  is_orcish_valley_finished, is_frozen_tundra_finished, is_demon_world_finished,
+                  r_0_0):
     #Title screen:
     if current_menu == GameLoopState.MainMenu:
         state.title_screen_blit(mp)            
@@ -72,7 +26,8 @@ def redraw_screen(current_menu, music_playing, screen, mp, assets, state):
         state.facelessman_screen_blit(mp)
     #Battle screen:
     elif current_menu == GameLoopState.TownBattle:
-        state.battle_screen_blit(mp)   
+        state.battle_screen_blit(mp, is_crypts_finished, is_orcish_valley_finished,
+                                 is_frozen_tundra_finished, is_demon_world_finished)   
     #Character screen
     elif current_menu == GameLoopState.TownCharacter:
         state.character_screen_blit(mp)
@@ -85,7 +40,7 @@ def redraw_screen(current_menu, music_playing, screen, mp, assets, state):
     elif music_playing == False:
         screen.blit(assets.raw_music_off_bg, (r_0_0))
 
-def victory_blitting(assets):
+def victory_blitting(assets, screen, color_yellow, color_green, color_white, color_black):
     red_bar_x = 150
     red_bar_y = 200
     red_bar_width = 200
@@ -106,9 +61,10 @@ class Combat:
         AdvancePlayer = 1
         Slashing = 2
 
-    def __init__(self, screen, enemy_current_hp, hero_current_hp, hero_damage, 
-                 enemy_damage, hero_defence, enemy_defence, player_slash_img, enemy_slash_img, hero_total_hp, enemy_total_hp,
-                 is_crypts_finished, is_orcish_valley_finished, assets):
+    def __init__(self, screen, enemy_current_hp, hero_current_hp, hero_damage, enemy_damage,
+                 hero_defence, enemy_defence, player_slash_img, enemy_slash_img, hero_total_hp,
+                 enemy_total_hp, is_crypts_finished, is_orcish_valley_finished, assets,
+                 color_black, color_red, color_white, color_yellow, color_green, state):
         
         self.crypts_scenes_completion = [0,0,0]
         self.orcish_valley_scenes_completion = [0,0,0,0,0]
@@ -126,6 +82,7 @@ class Combat:
         #----
         self.assets = assets
         self.screen = screen
+        self.state = state
         self.enemy_current_hp = enemy_current_hp
         self.hero_current_hp = hero_current_hp
         self.hero_damage = hero_damage
@@ -139,11 +96,16 @@ class Combat:
         self.move_coord = 0
         self.moving_forwards_or_backwards_switch = True
         self.attack_turn_switch = False
-        self.hero_dmg_num_blit_x = 330
-        self.hero_dmg_num_blit_y = 420
+        self.hero_dmg_num_blit_x = 330 #Start
         self.enemy_dmg_num_blit_x = 150
-        self.enemy_dmg_num_blit_y = 420
+        self.whose_dmg_coord_y = 460 #End
         self.combat_finished = False
+        #---- Colors
+        self.color_black = color_black
+        self.color_red = color_red
+        self.color_white = color_white
+        self.color_yellow = color_yellow
+        self.color_green = color_green
 
     def update(self, mp, current_menu):
         self.current_menu = current_menu
@@ -171,7 +133,7 @@ class Combat:
             self.whose_damage = self.hero_damage
             self.whose_defence = self.enemy_defence
             self.whose_dmg_coord_x = self.hero_dmg_num_blit_x
-            self.whose_dmg_coord_y = self.hero_dmg_num_blit_y
+            self.whose_dmg_coord_y = self.whose_dmg_coord_y - 0.4 
             self.whose_current_hp = self.enemy_current_hp
         elif whose_move == "enemy":
             self.desired_defender = self.assets.scaled_player_char[0]
@@ -184,7 +146,7 @@ class Combat:
             self.whose_damage = self.enemy_damage
             self.whose_defence = self.hero_defence
             self.whose_dmg_coord_x = self.enemy_dmg_num_blit_x
-            self.whose_dmg_coord_y = self.enemy_dmg_num_blit_y
+            self.whose_dmg_coord_y = self.whose_dmg_coord_y - 0.4 
             self.whose_current_hp = self.hero_current_hp
     
     def updating_remaining_hp(self, whose_move):
@@ -193,13 +155,15 @@ class Combat:
         else:
             self.enemy_current_hp = self.whose_current_hp
 
-    def all_characters_combat_movement_blitting(self, whose_move):
+    def all_characters_combat_movement_blitting(self, whose_move, hero_hp_bar_text, enemy_hp_bar_text):
+        self.hero_hp_bar_text = hero_hp_bar_text
+        self.enemy_hp_bar_text = enemy_hp_bar_text
         self.updating_attributes_depending_on_whose_turn(whose_move)
         self.screen.blit(self.desired_bg[0], self.desired_bg[1])
         self.screen.blit(self.desired_defender, (self.desired_defender_coord_xy))
         #--- HP Bar Blitting:
-        text_hero_current_hp.blit_text(self.screen, self.mp)
-        text_enemy_current_hp.blit_text(self.screen, self.mp)
+        self.hero_hp_bar_text.blit_text(self.screen, self.mp)
+        self.enemy_hp_bar_text.blit_text(self.screen, self.mp)
         self.hp_bar_blitting() 
         #------------------------
         if self.combat_state == Combat.CombatState.Start:
@@ -236,16 +200,16 @@ class Combat:
                 if self.move_coord == 0:
             
                     self.moving_forwards_or_backwards_switch = True
-                    self.whose_dmg_coord_y = 420 #Resetting damage coordinates
+                    self.whose_dmg_coord_y = 460 #Resetting damage coordinates
                     
                     self.attack_turn_switching_inside_class(whose_move)
                     self.victory_checking(whose_move)
                 #Blit of damage inflicted:
                 else:
                     if self.whose_dmg_coord_y > 380:
-                        self.damage_numbers_appearing(self.whose_damage, self.whose_defence, self.whose_dmg_coord_x, self.whose_dmg_coord_y)
-                        self.whose_dmg_coord_y = self.whose_dmg_coord_y - 1                  
-    
+                        self.damage_numbers_appearing(self.whose_damage, self.whose_defence,
+                                                      self.whose_dmg_coord_x, self.whose_dmg_coord_y)        
+            
     def hp_bar_blitting(self):
         #--- Player HP Bar coordinates:
         player_hp_bar_x = 30
@@ -264,23 +228,23 @@ class Combat:
 
         #------------------------------------------------------------------
         #--- Player HP Bar Border:
-        pygame.draw.rect(self.screen, color_black, [player_hp_bar_x, player_hp_bar_y, hp_bar_width, hp_bar_height], 2)
+        pygame.draw.rect(self.screen, self.color_black, [player_hp_bar_x, player_hp_bar_y, hp_bar_width, hp_bar_height], 2)
         #--- Player HP:
-        pygame.draw.rect(self.screen, color_red, [player_hp_bar_x + 2, player_hp_bar_y + 2, hero_hp_percent * (hp_bar_width - 4), hp_bar_height - 4])
+        pygame.draw.rect(self.screen, self.color_red, [player_hp_bar_x + 2, player_hp_bar_y + 2, hero_hp_percent * (hp_bar_width - 4), hp_bar_height - 4])
         #--- Player HP number representation:
-        text_player_hp_bar_numbers = self.assets.text_font_30.render((str(self.hero_current_hp)+"/"+str(self.hero_total_hp)), True, (color_white))
-        text_player_hp_bar_numbers_border = self.assets.text_font_30.render((str(self.hero_current_hp)+"/"+str(self.hero_total_hp)), True, (color_black))
+        text_player_hp_bar_numbers = self.assets.text_font_30.render((str(self.hero_current_hp)+"/"+str(self.hero_total_hp)), True, (self.color_white))
+        text_player_hp_bar_numbers_border = self.assets.text_font_30.render((str(self.hero_current_hp)+"/"+str(self.hero_total_hp)), True, (self.color_black))
         self.screen.blit(text_player_hp_bar_numbers_border, (31,71))
         self.screen.blit(text_player_hp_bar_numbers, (30,70))
 
         #------------------------------------------------------------------
         #--- Enemy HP Bar Border:
-        pygame.draw.rect(self.screen, color_black, [enemy_hp_bar_x, enemy_hp_bar_y, hp_bar_width, hp_bar_height], 2)
+        pygame.draw.rect(self.screen, self.color_black, [enemy_hp_bar_x, enemy_hp_bar_y, hp_bar_width, hp_bar_height], 2)
         #--- Enemy HP:
-        pygame.draw.rect(self.screen, color_red, [enemy_hp_bar_x + 2, enemy_hp_bar_y + 2, enemy_hp_percent * (hp_bar_width - 4), hp_bar_height - 4])
+        pygame.draw.rect(self.screen, self.color_red, [enemy_hp_bar_x + 2, enemy_hp_bar_y + 2, enemy_hp_percent * (hp_bar_width - 4), hp_bar_height - 4])
         #--- Enemy HP number representation:
-        text_enemy_hp_bar_numbers = self.assets.text_font_30.render((str(self.enemy_current_hp)+"/"+str(self.enemy_total_hp)), True, (color_white))
-        text_enemy_hp_bar_numbers_border = self.assets.text_font_30.render((str(self.enemy_current_hp)+"/"+str(self.enemy_total_hp)), True, (color_black))
+        text_enemy_hp_bar_numbers = self.assets.text_font_30.render((str(self.enemy_current_hp)+"/"+str(self.enemy_total_hp)), True, (self.color_white))
+        text_enemy_hp_bar_numbers_border = self.assets.text_font_30.render((str(self.enemy_current_hp)+"/"+str(self.enemy_total_hp)), True, (self.color_black))
         self.screen.blit(text_enemy_hp_bar_numbers_border, (271,71))
         self.screen.blit(text_enemy_hp_bar_numbers, (270,70))
 
@@ -288,17 +252,17 @@ class Combat:
         damage_to_do = whose_dmg - whose_def
         if damage_to_do <= 0:
                 damage_to_do = 0
-        text_damage_number_border = self.assets.text_font_40.render(("-"+str(damage_to_do)), True, (color_black))
-        screen.blit(text_damage_number_border, (dmg_num_x +1, dmg_num_y +1))
-        text_damage_number = self.assets.text_font_40.render(("-"+str(damage_to_do)), True, (color_red))
-        screen.blit(text_damage_number, (dmg_num_x, dmg_num_y))
+        text_damage_number_border = self.assets.text_font_40.render(("-"+str(damage_to_do)), True, (self.color_black))
+        self.screen.blit(text_damage_number_border, (dmg_num_x +1, dmg_num_y +1))
+        text_damage_number = self.assets.text_font_40.render(("-"+str(damage_to_do)), True, (self.color_red))
+        self.screen.blit(text_damage_number, (dmg_num_x, dmg_num_y))
     
     def victory_checking(self, whose_winning):
         if self.enemy_current_hp <= 0:
             self.hp_bar_blitting()
             print(whose_winning)
             pygame.mixer.Channel(0).stop()
-            victory_blitting(self.assets)
+            victory_blitting(self.assets, self.screen, self.color_yellow, self.color_green, self.color_white, self.color_black)
             pygame.mixer.Channel(1).play(pygame.mixer.Sound(self.assets.sound_leveling_up))
             time.sleep(3)
             self.updating_game_progress_after_fight_outcome(whose_winning, self.current_menu)
@@ -387,7 +351,10 @@ class Combat:
 
     def main_game_loop_attack_turn_switcher(self):
         whose_turn = self.attack_turn_switch
-        return whose_turn    
+        return whose_turn  
+
+    def update_hero_stats_variables_integers(self):
+        return self.hero_current_hp  
     
 def exit_game_actions(screen, assets):
     screen.blit(assets.scaled_exit_game_bg[0], assets.scaled_exit_game_bg[1])
@@ -397,25 +364,22 @@ def exit_game_actions(screen, assets):
     pygame.quit()
     sys.exit()
 
-def loading_screen(screen, mp, assets):
-    screen.blit(assets.scaled_loading_bg[0], assets.scaled_loading_bg[1])
-    text_loading.blit_text(screen, mp)
-    pygame.display.flip()
-    time.sleep(0.5)
 #>>>>>> End - Custom Functions <<<<<<
 
 #>>>>>> Custom Classes <<<<<<
 class ScreenBlittedState:
 
-    def __init__(self, screen, assets):
+    def __init__(self, screen, assets, hero_level, hero_exp_formated, hero_hp_for_char_screen, hero_damage, 
+                 hero_defence, hero_unsed_stat_points, hero_vitality, hero_strength):
         self.screen = screen
         self.assets = assets
+        self.hero_hp_for_char_screen = hero_hp_for_char_screen
         self.back_text_for_many_places = MenuText("BACK", 170,720, assets.font_72)
         self.title_screen_text_items = [(MenuText("NEW GAME", 100,200, assets.font_72), GameLoopState.NewGame),
                                         (MenuText("??????????", 88,259, assets.font_72), GameLoopState.MainMenu), #Supose to be "LOAD GAME"
                                         (MenuText("ABOUT", 154,318, assets.font_72), GameLoopState.AboutGame),
                                         (MenuText("EXIT", 179,377, assets.font_72), GameLoopState.Exit)]
-        self.new_game_screen_text_items = [(MenuText("START NEW GAME?", 33,200, assets.font_62), None), 
+        self.new_game_screen_text_items = [(MenuText("START NEW GAME?", 33,200, assets.font_62), GameLoopState.NewGame), 
                                             (MenuText("YES", 191,259, assets.font_62), GameLoopState.TownMainMenu),
                                             (MenuText('NO', 204,318, assets.font_62), GameLoopState.MainMenu)]
         self.about_screen_text_items = [(MenuText("BACK", 180,540, assets.font_72), GameLoopState.MainMenu)]
@@ -433,46 +397,56 @@ class ScreenBlittedState:
                                          (MenuText("??????", 150,379, assets.font_72), GameLoopState.TownBattle), 
                                          (MenuText("??????", 150,438, assets.font_72), GameLoopState.TownBattle), 
                                          (MenuText("??????", 150,497, assets.font_72), GameLoopState.TownBattle)]
-        self.character_screen_text_items = [(MenuText("STATS", 187,370, assets.font_50), None), 
-                                            (MenuText("LEVEL", 60,416, assets.font_40), None), 
-                                            (MenuText("EXP", 60,447, assets.font_40), None), 
-                                            (MenuText("HEALTH", 60,478, assets.font_40), None), 
-                                            (MenuText("DAMAGE", 60,509, assets.font_40), None), 
-                                            (MenuText("DEFENCE", 60,540, assets.font_40), None), 
-                                            (MenuText("FREE POINTS", 60,571, assets.font_40), None), 
-                                            (MenuText("VITALITY", 60,602, assets.font_40), None), 
-                                            (MenuText("STRENGTH", 60,633, assets.font_40), None), 
+        self.character_screen_text_items = [(MenuText("STATS", 187,370, assets.font_50), GameLoopState.TownCharacter), 
+                                            (MenuText("LEVEL", 60,416, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText("EXP", 60,447, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText("HEALTH", 60,478, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText("DAMAGE", 60,509, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText("DEFENCE", 60,540, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText("FREE POINTS", 60,571, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText("VITALITY", 60,602, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText("STRENGTH", 60,633, assets.font_40), GameLoopState.TownCharacter),
+                                            (MenuText(str(hero_level), 300,414, assets.font_40), GameLoopState.TownCharacter),
+                                            (MenuText(hero_exp_formated, 300,445, assets.font_40), GameLoopState.TownCharacter),
+                                            (MenuText(str(self.hero_hp_for_char_screen), 300,476, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText(str(hero_damage), 300,507, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText(str(hero_defence), 300,538, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText(str(hero_unsed_stat_points), 300,569, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText(str(hero_vitality), 300,600, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText(str(hero_strength), 300,631, assets.font_40), GameLoopState.TownCharacter), 
                                             ((self.back_text_for_many_places), GameLoopState.TownMainMenu)]
         self.shop_screen_text_items = [((self.back_text_for_many_places), GameLoopState.TownMainMenu)]
+        self.hp_bars_text_items = [MenuText("HERO HP", 58,20, assets.font_40), MenuText("ENEMY HP", 285,20, assets.font_40)]
 
-    #Method which goes thought the lists of texts and blits them:
+    #Method which goes throught the lists of texts and blits them:
     def blit_text_items(self, text_items, mp):
         for (text_item, _) in text_items:
             text_item.blit_text(self.screen, mp)
 
     def title_screen_blit(self, mp):
-            screen.blit(self.assets.scaled_main_menu_bg[0], self.assets.scaled_main_menu_bg[1]) #Background
+            self.screen.blit(self.assets.scaled_main_menu_bg[0], self.assets.scaled_main_menu_bg[1]) #Background
             self.blit_text_items(self.title_screen_text_items, mp) #Texts
     
     def new_game_confirmation_screen_blit(self, mp):
-        screen.blit(self.assets.scaled_main_menu_bg[0], self.assets.scaled_main_menu_bg[1]) #Background
+        self.screen.blit(self.assets.scaled_main_menu_bg[0], self.assets.scaled_main_menu_bg[1]) #Background
         self.blit_text_items(self.new_game_screen_text_items, mp) #Texts
     
     def about_screen_blit(self, mp):
-        screen.blit(self.assets.scaled_about_bg[0], self.assets.scaled_about_bg[1]) #Background
+        self.screen.blit(self.assets.scaled_about_bg[0], self.assets.scaled_about_bg[1]) #Background
         self.blit_text_items(self.about_screen_text_items, mp) #Texts
     
     def town_screen_blit(self, mp):
-        screen.blit(self.assets.scaled_town_bg_1[0], self.assets.scaled_town_bg_1[1]) #Background
+        self.screen.blit(self.assets.scaled_town_bg_1[0], self.assets.scaled_town_bg_1[1]) #Background
         self.blit_text_items(self.town_screen_text_items, mp) #Texts
 
     def facelessman_screen_blit(self, mp):
-        screen.blit(self.assets.scaled_faceless_man_bg[0], self.assets.scaled_faceless_man_bg[1]) #Background
+        self.screen.blit(self.assets.scaled_faceless_man_bg[0], self.assets.scaled_faceless_man_bg[1]) #Background
         self.blit_text_items(self.facelessman_screen_text_items, mp) #Texts
     
-    def battle_screen_blit(self, mp):
+    def battle_screen_blit(self, mp, is_crypts_finished, is_orcish_valley_finished, 
+                           is_frozen_tundra_finished, is_demon_world_finished):
         #--- Background
-        screen.blit(self.assets.scaled_gate_guard_bg[0], self.assets.scaled_gate_guard_bg[1])
+        self.screen.blit(self.assets.scaled_gate_guard_bg[0], self.assets.scaled_gate_guard_bg[1])
         #--- Crypts
         self.battle_screen_text_items[0][0].blit_text(self.screen, mp)
         #--- Orcish Valley
@@ -494,12 +468,17 @@ class ScreenBlittedState:
         self.battle_screen_text_items[4][0].blit_text(self.screen, mp)
 
     def character_screen_blit(self, mp):
-        screen.blit(self.assets.scaled_human_3_bg[0], self.assets.scaled_human_3_bg[1]) #Backgrounds
+        self.screen.blit(self.assets.scaled_human_3_bg[0], self.assets.scaled_human_3_bg[1]) #Backgrounds
         self.blit_text_items(self.character_screen_text_items, mp) #Texts
     
     def shop_screen_blit(self, mp):
-        screen.blit(self.assets.scaled_shop_bg[0], self.assets.scaled_shop_bg[1]) #Backgrounds
+        self.screen.blit(self.assets.scaled_shop_bg[0], self.assets.scaled_shop_bg[1]) #Backgrounds
         self.blit_text_items(self.shop_screen_text_items, mp) #Texts
+
+    def update_char_screen_stats_texts(self, hero_current_hp, hero_total_hp):
+        self.hero_hp_for_char_screen = f"{hero_current_hp}/{hero_total_hp}"
+        self.character_screen_text_items[11] = (MenuText(str(self.hero_hp_for_char_screen), 300,476, self.assets.font_40), 
+                                                GameLoopState.TownCharacter)
 
 class MenuText:
     
@@ -691,151 +670,186 @@ class Assets:
         return new_size_and_rect_in_a_lists
 
 #>>>>>> End - Custom Classes <<<<<< 
+def main():
+    pygame.init()
+    pygame.mixer.init()
 
-#>>>>>> Game Progresion Switches <<<<<<
-is_crypts_finished = False
-is_orcish_valley_finished = False
-is_frozen_tundra_finished = False
-is_demon_world_finished = False
-attack_turn = 0
-#>>>>>> End - Game Progresion Switches <<<<<<  
+    #>>>>>> Screen <<<<<<
+    screen_width = 480
+    screen_height = 784
+    screen = pygame.display.set_mode((screen_width, screen_height))
+    pygame.display.set_caption("Auto Battler")
+    #>>>>>> End - Screen <<<<<<``
 
-#>>>>>> Instances <<<<<<
-assets = Assets()
-state = ScreenBlittedState(screen, assets)
-combat_instance = Combat(screen, enemy_current_hp, 
-                        hero_current_hp, hero_damage, enemy_damage, hero_defence, enemy_defence, 
-                        assets.scaled_player_attack_slash, assets.scaled_enemy_attack_slash, hero_total_hp, enemy_total_hp,
-                        is_crypts_finished, is_orcish_valley_finished, assets)
-#>>>>>> End - Instances <<<<<<
+    #>>>>>> Game State/Progress tracking <<<<<<
+    game_finish_progress = {'crypts': False, 'orcish_valley': False, 'frozen_tundra': False, 'demon_world': False}
+    #>>>>>> End - Game State/Progress tracking <<<<<<
 
-#>>>>>> Texts: <<<<<<
-#Creating texts, setting coordinates and fonts:
-#-!- Back -> for general use
-text_back = MenuText("BACK", 170,720, assets.font_72)
-#--- Loading..
-text_loading = MenuText("LOADING..", 10, 726, assets.font_72)
-#--- Hero Health bar
-text_hero_current_hp = MenuText("HERO HP", 58,20, assets.font_40)
-#--- Enemey Health bar
-text_enemy_current_hp = MenuText("ENEMY HP", 285,20, assets.font_40)
-#Getting text rect size example:
-#test = assets.font_72.render("ORCISH VALLEY", True, (color_black))
-#print(test.get_size())
-#>>>>>> End - Texts <<<<<<
+    #>>>>>> Variables <<<<<<
+    #--- Hero:
+    hero_level = 1
+    hero_exp = 0
+    hero_exp_to_lvlup = 200
+    hero_exp_formated = f"{hero_exp}/{hero_exp_to_lvlup}"
+    hero_total_hp = 300
+    hero_current_hp = 300
+    hero_hp_for_char_screen = f"{hero_current_hp}/{hero_total_hp}"
+    hero_damage = 10
+    hero_defence = 10
+    hero_unsed_stat_points = 0
+    hero_vitality = 0
+    hero_strength = 0
+    #--- Enemy:
+    enemy_total_hp = 50
+    enemy_current_hp = 50
+    enemy_damage = 20
+    enemy_defence = 0
+    #--- Colors:
+    color_black = 0,0,0
+    color_white = 255,255,255
+    color_red = 255,0,0
+    #color_grey = 192,192,192
+    color_yellow = 255,255,0
+    color_green = 0,255,0
+    #--- range() numbers:
+    #For music mute button:
+    r_0_0 = 0,0
+    #>>>>>> End - Variables <<<<<<
 
-#>>>>>> Loops <<<<<<
-#Main loop:
-program_running_loop = True
-#Music on/off:
-music_playing = True
-#Game menu/scenes changing/control:
-current_menu = GameLoopState.MainMenu
-#>>>>>> End - Loops <<<<<<
+    #>>>>>> Game Progresion Switches <<<<<<
+    is_crypts_finished = False
+    is_orcish_valley_finished = False
+    is_frozen_tundra_finished = False
+    is_demon_world_finished = False
+    #attack_turn = 0
+    #>>>>>> End - Game Progresion Switches <<<<<<  
 
-#>>>>>> Time/FPS tracking/settting <<<<<<
-my_event = pygame.USEREVENT + 1
-#counts game "fps":
-pygame.time.set_timer(my_event, 5)
-start_time = pygame.time.get_ticks()
-#>>>>>> End - Time/FPS tracking/settting <<<<<<
+    #>>>>>> Instances <<<<<<
+    assets = Assets()
+    state = ScreenBlittedState(screen, assets, hero_level, hero_exp_formated, hero_hp_for_char_screen, hero_damage,
+                               hero_defence, hero_unsed_stat_points, hero_vitality, hero_strength)
+    combat_instance = Combat(screen, enemy_current_hp, hero_current_hp, hero_damage, enemy_damage,
+                             hero_defence, enemy_defence, assets.scaled_player_attack_slash,
+                             assets.scaled_enemy_attack_slash, hero_total_hp, enemy_total_hp,
+                             is_crypts_finished, is_orcish_valley_finished, assets, color_black, color_red,
+                             color_white, color_yellow, color_green, state)
+    #>>>>>> End - Instances <<<<<<
 
-#>>>>>> Programs logic Loop <<<<<<
-while program_running_loop:
-    #---- Music ----
-    if music_playing == True:
-        if current_menu == GameLoopState.TownMainMenu:
-            assets.town_music.set_volume(0.1)
-            assets.town_music.play(-1)
-        #elif current_menu == GameLoopState.TownMainMenu:
-        #    main_menu_music.set_volume(0.1)
-        #    main_menu_music.play(-1)
-    for event in pygame.event.get():
-        #Constant mouse position tracking:
-        mouse_hovering_pos = pygame.mouse.get_pos()
-        mp = mouse_hovering_pos
-        current_time = pygame.time.get_ticks()
-        if event.type == pygame.QUIT:
-            exit_game_actions(screen, assets)
-        elif current_menu == GameLoopState.Exit:
-            exit_game_actions(screen, assets)
-        elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            exit_game_actions(screen, assets)
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            #Mouse clicks tracking:
-            m_c_p = pygame.mouse.get_pos()
-            #---- Music/Sound mute buttons:
-            if music_playing == True:
-                if m_c_p[0] in range(0,50) and m_c_p[1] in range(0,50):
-                    music_playing = False
-                    pygame.mixer.pause()
-            elif music_playing == False:
-                if m_c_p[0] in range(0,50) and m_c_p[1] in range(0,50):
-                    music_playing = True
-                    pygame.mixer.unpause()
-            #>>>>>> Main Menu screen clicking <<<<<< ----------------------------------
-            if current_menu == GameLoopState.MainMenu:
-                for (text_item, menu_state) in state.title_screen_text_items:
-                    if text_item.is_mouse_over(m_c_p):
-                        current_menu = menu_state
-            #---- New Game Y/N confirmation screen ----
-            elif current_menu == GameLoopState.NewGame:
-                for (text_item, menu_state) in state.new_game_screen_text_items:
-                    if text_item.is_mouse_over(m_c_p):
-                        current_menu = menu_state
-            #---- About screen ----        
-            elif current_menu == GameLoopState.AboutGame:
-                for (text_item, menu_state) in state.about_screen_text_items:
-                    if text_item.is_mouse_over(m_c_p):
-                        current_menu = menu_state
-            #>>>>>> Town Screen clicking <<<<<< ---------------------------------------
-            elif current_menu == GameLoopState.TownMainMenu:
-                for (text_item, menu_state) in state.town_screen_text_items:
-                    if text_item.is_mouse_over(m_c_p):
-                        current_menu = menu_state
-            #--- Faceless Man screen clicking ---
-            elif current_menu == GameLoopState.TownFacelessman:
-                for (text_item, menu_state) in state.facelessman_screen_text_items:
-                    if text_item.is_mouse_over(m_c_p):
-                        current_menu = menu_state
-            #--- Battle screen clicking: ---
-            elif current_menu == GameLoopState.TownBattle:
-                for (text_item, menu_state) in state.battle_screen_text_items[:5]:
-                    if text_item.is_mouse_over(m_c_p):
-                        if menu_state == GameLoopState.OrcishValleyFighting and is_crypts_finished == False:
-                            current_menu = GameLoopState.TownBattle
-                        elif menu_state == GameLoopState.FrozenTundraFighting and is_orcish_valley_finished == False:
-                            current_menu = GameLoopState.TownBattle
-                        elif menu_state == GameLoopState.DemonWorldFighting and is_frozen_tundra_finished == False:
-                            current_menu = GameLoopState.TownBattle
-                        else:
+    #>>>>>> Dictionaries <<<<<<
+    gameloopstate_and_text_items_dict = {GameLoopState.MainMenu: state.title_screen_text_items,
+                                        GameLoopState.NewGame: state.new_game_screen_text_items,
+                                        GameLoopState.AboutGame: state.about_screen_text_items,
+                                        GameLoopState.TownMainMenu: state.town_screen_text_items,
+                                        GameLoopState.TownFacelessman: state.facelessman_screen_text_items,
+                                        GameLoopState.TownCharacter: state.character_screen_text_items,
+                                        GameLoopState.TownShop: state.shop_screen_text_items}
+    #>>>>>> End - Dictionaries <<<<<<
+
+    #>>>>>> Texts: <<<<<<
+    #Creating texts, setting coordinates and fonts:
+    #--- Hero Health bar
+    text_hero_current_hp = MenuText("HERO HP", 58,20, assets.font_40)
+    #--- Enemey Health bar
+    text_enemy_current_hp = MenuText("ENEMY HP", 285,20, assets.font_40)
+    #Getting text rect size example:
+    #test = assets.font_72.render("ORCISH VALLEY", True, (color_black))
+    #print(test.get_size())
+    #>>>>>> End - Texts <<<<<<
+
+    #>>>>>> Loops <<<<<<
+    #Main loop:
+    program_running_loop = True
+    #Music on/off:
+    music_playing = True
+    #Game menu/scenes changing/control:
+    current_menu = GameLoopState.MainMenu
+    #>>>>>> End - Loops <<<<<<
+
+    #>>>>>> Time/FPS tracking/settting <<<<<<
+    my_event = pygame.USEREVENT + 1
+    #counts game "fps":
+    pygame.time.set_timer(my_event, 5)
+    start_time = pygame.time.get_ticks()
+    #>>>>>> End - Time/FPS tracking/settting <<<<<<
+
+    #>>>>>> Programs logic Loop <<<<<<
+    while program_running_loop:
+        #---- Music ----
+        if music_playing == True:
+            if current_menu == GameLoopState.TownMainMenu:
+                assets.town_music.set_volume(0.1)
+                assets.town_music.play(-1)
+            #elif current_menu == GameLoopState.TownMainMenu:
+            #    main_menu_music.set_volume(0.1)
+            #    main_menu_music.play(-1)
+        for event in pygame.event.get():
+            #Constant mouse position tracking:
+            mouse_hovering_pos = pygame.mouse.get_pos()
+            mp = mouse_hovering_pos
+            current_time = pygame.time.get_ticks()
+            if event.type == pygame.QUIT:
+                exit_game_actions(screen, assets)
+            elif current_menu == GameLoopState.Exit:
+                exit_game_actions(screen, assets)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                exit_game_actions(screen, assets)
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                #Mouse clicks tracking:
+                m_c_p = pygame.mouse.get_pos()
+                #---- Music/Sound mute buttons:
+                if music_playing == True:
+                    if m_c_p[0] in range(0,50) and m_c_p[1] in range(0,50):
+                        music_playing = False
+                        pygame.mixer.pause()
+                elif music_playing == False:
+                    if m_c_p[0] in range(0,50) and m_c_p[1] in range(0,50):
+                        music_playing = True
+                        pygame.mixer.unpause()
+                #>>>>>> Main Menu and Town screens clicking <<<<<< ----------------------------------
+                #---- NOTE to self, read about dict() usage again. 
+                if current_menu in gameloopstate_and_text_items_dict.keys():
+                    value = gameloopstate_and_text_items_dict[current_menu]
+                    for (text_item, menu_state) in value:
+                        if text_item.is_mouse_over(m_c_p):
                             current_menu = menu_state
-                combat_instance.update(mp, current_menu)
-            #--- Character screen clicking: ---
-            elif current_menu == GameLoopState.TownCharacter:
-                for (text_item, menu_state) in state.character_screen_text_items:
-                    if text_item.is_mouse_over(m_c_p):
-                        current_menu = menu_state
-            #--- Shop screen clicking ---
-            elif current_menu == GameLoopState.TownShop:
-                for (text_item, menu_state) in state.shop_screen_text_items:
-                    if text_item.is_mouse_over(m_c_p):
-                        current_menu = menu_state
-        #--- All fights logic and blitting -----------------------------------------------<<<<<<
-        if event.type == my_event:
-            #--- Crypts fighting ---
-            if current_menu == GameLoopState.CryptsFighting or current_menu == GameLoopState.OrcishValleyFighting:
-                if (current_time - start_time) >= 5:
-                    #resseting start time value:
-                    start_time = pygame.time.get_ticks()    
-                    if combat_instance.main_game_loop_attack_turn_switcher() == False:
-                        combat_instance.all_characters_combat_movement_blitting('player')
-                        if combat_instance.returning_to_town_after_combat_conclusion() == True:
-                            current_menu = GameLoopState.TownMainMenu                    
-                    elif combat_instance.main_game_loop_attack_turn_switcher() == True:
-                        combat_instance.all_characters_combat_movement_blitting('enemy')
-                        if combat_instance.returning_to_town_after_combat_conclusion() == True:
-                            current_menu = GameLoopState.TownMainMenu
-    redraw_screen(current_menu, music_playing, screen, mp, assets, state)
-    pygame.display.flip()
-#>>>>>> End - Programs logic Loop <<<<<<
+                            print(hero_current_hp)
+                else:
+                    for (text_item, menu_state) in state.battle_screen_text_items[:5]:
+                        if text_item.is_mouse_over(m_c_p):
+                            if menu_state == GameLoopState.OrcishValleyFighting and is_crypts_finished == False:
+                                current_menu = GameLoopState.TownBattle
+                            elif menu_state == GameLoopState.FrozenTundraFighting and is_orcish_valley_finished == False:
+                                current_menu = GameLoopState.TownBattle
+                            elif menu_state == GameLoopState.DemonWorldFighting and is_frozen_tundra_finished == False:
+                                current_menu = GameLoopState.TownBattle
+                            else:
+                                current_menu = menu_state
+                    combat_instance.update(mp, current_menu)
+            #--- All fights logic and blitting -----------------------------------------------<<<<<<
+            if event.type == my_event:
+                #--- Crypts fighting ---
+                if current_menu == GameLoopState.CryptsFighting or current_menu == GameLoopState.OrcishValleyFighting:
+                    if (current_time - start_time) >= 5:
+                        #resseting start time value:
+                        start_time = pygame.time.get_ticks()    
+                        if combat_instance.main_game_loop_attack_turn_switcher() == False:
+                            combat_instance.all_characters_combat_movement_blitting('player', state.hp_bars_text_items[0],
+                                                                                    state.hp_bars_text_items[1])
+                            if combat_instance.returning_to_town_after_combat_conclusion() == True:
+                                hero_current_hp = combat_instance.update_hero_stats_variables_integers()
+                                state.update_char_screen_stats_texts(hero_current_hp, hero_total_hp)
+                                current_menu = GameLoopState.TownMainMenu                    
+                        elif combat_instance.main_game_loop_attack_turn_switcher() == True:
+                            combat_instance.all_characters_combat_movement_blitting('enemy', state.hp_bars_text_items[0],
+                                                                                    state.hp_bars_text_items[1])
+                            if combat_instance.returning_to_town_after_combat_conclusion() == True:
+                                hero_current_hp = combat_instance.update_hero_stats_variables_integers()
+                                state.update_char_screen_stats_texts(hero_current_hp, hero_total_hp)
+                                current_menu = GameLoopState.TownMainMenu
+        redraw_screen(current_menu, music_playing, screen, mp, assets, state, is_crypts_finished,
+                  is_orcish_valley_finished, is_frozen_tundra_finished, is_demon_world_finished,
+                  r_0_0)
+        pygame.display.flip()
+    #>>>>>> End - Programs logic Loop <<<<<<
+if __name__ == "__main__":
+    main()
