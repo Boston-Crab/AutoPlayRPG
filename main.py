@@ -25,6 +25,8 @@ orcish_valley_scenes_completion = [0,0,0,0,0]
 #--- Hero:
 hero_level = 1
 hero_exp = 0
+hero_exp_to_lvlup = 200
+hero_exp_formated = f"{hero_exp}/"f"{hero_exp_to_lvlup}"
 hero_total_hp = 300
 hero_current_hp = 300
 hero_damage = 10
@@ -441,7 +443,15 @@ class ScreenBlittedState:
                                             (MenuText("DEFENCE", 60,540, assets.font_40), GameLoopState.TownCharacter), 
                                             (MenuText("FREE POINTS", 60,571, assets.font_40), GameLoopState.TownCharacter), 
                                             (MenuText("VITALITY", 60,602, assets.font_40), GameLoopState.TownCharacter), 
-                                            (MenuText("STRENGTH", 60,633, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText("STRENGTH", 60,633, assets.font_40), GameLoopState.TownCharacter),
+                                            (MenuText(str(hero_level), 300,414, assets.font_40), GameLoopState.TownCharacter),
+                                            (MenuText(hero_exp_formated, 300,445, assets.font_40), GameLoopState.TownCharacter),
+                                            (MenuText(str(hero_total_hp), 300,476, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText(str(hero_damage), 300,507, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText(str(hero_defence), 300,538, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText(str(hero_unsed_stat_points), 300,569, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText(str(hero_vitality), 300,600, assets.font_40), GameLoopState.TownCharacter), 
+                                            (MenuText(str(hero_strength), 300,631, assets.font_40), GameLoopState.TownCharacter), 
                                             ((self.back_text_for_many_places), GameLoopState.TownMainMenu)]
         self.shop_screen_text_items = [((self.back_text_for_many_places), GameLoopState.TownMainMenu)]
 
@@ -785,11 +795,10 @@ while program_running_loop:
                     pygame.mixer.unpause()
             #>>>>>> Main Menu and Town screens clicking <<<<<< ----------------------------------
             if current_menu in gameloopstate_and_text_items_dict.keys():
-                for key, value in gameloopstate_and_text_items_dict.items():
-                    if current_menu == key:
-                        for (text_item, menu_state) in value:
-                            if text_item.is_mouse_over(m_c_p):
-                                current_menu = menu_state
+                value = gameloopstate_and_text_items_dict[current_menu]
+                for (text_item, menu_state) in value:
+                    if text_item.is_mouse_over(m_c_p):
+                        current_menu = menu_state
             else:
                 for (text_item, menu_state) in state.battle_screen_text_items[:5]:
                     if text_item.is_mouse_over(m_c_p):
