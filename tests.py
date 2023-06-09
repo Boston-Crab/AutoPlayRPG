@@ -63,13 +63,18 @@ class Combat:
 
     def __init__(self, screen, enemy_current_hp, hero_current_hp, hero_damage, enemy_damage,
                  hero_defence, enemy_defence, player_slash_img, enemy_slash_img, hero_total_hp,
-                 enemy_total_hp, is_crypts_finished, is_orcish_valley_finished, assets,
-                 color_black, color_red, color_white, color_yellow, color_green, state):
+                 enemy_total_hp, is_crypts_finished, is_orcish_valley_finished,
+                 is_frozen_tundra_finished, is_demon_world_finished, assets, color_black, color_red,
+                 color_white, color_yellow, color_green, state):
         
         self.crypts_scenes_completion = [0,0,0]
         self.orcish_valley_scenes_completion = [0,0,0,0,0]
+        self.frozen_tundra_scenes_completion = [0,0,0,0,0,0]
+        self.demon_world_scenes_completion = [0,0,0,0]
         self.is_crypts_finished = is_crypts_finished
         self.is_orcish_valley_finished = is_orcish_valley_finished
+        self.is_frozen_tundra_finished = is_frozen_tundra_finished
+        self.is_demon_world_finished = is_demon_world_finished
         self.combat_state = Combat.CombatState.Start
         #----
         self.desired_defender = None
@@ -276,26 +281,41 @@ class Combat:
             self.combat_finished = True
     
     def updating_game_progress_after_fight_outcome(self, whose_winning, current_menu):
-        global is_crypts_finished, is_orcish_valley_finished
         if whose_winning == "player":
             if current_menu == GameLoopState.CryptsFighting:
                 index_finding = self.crypts_scenes_completion.index(0)
                 self.crypts_scenes_completion[index_finding] = 1
                 if self.crypts_scenes_completion[2] == 1:
-                    is_crypts_finished = True
+                    self.is_crypts_finished = True
                     self.crypts_scenes_completion = [0,0,0]
             elif current_menu == GameLoopState.OrcishValleyFighting:
                 index_finding = self.orcish_valley_scenes_completion.index(0)
                 self.orcish_valley_scenes_completion[index_finding] = 1
                 if self.orcish_valley_scenes_completion[4] == 1:
-                    is_orcish_valley_finished = True
+                    self.is_orcish_valley_finished = True
                     self.orcish_valley_scenes_completion = [0,0,0,0,0]
+            elif current_menu == GameLoopState.FrozenTundraFighting:
+                index_finding = self.frozen_tundra_scenes_completion.index(0)
+                self.frozen_tundra_scenes_completion[index_finding] = 1
+                if self.frozen_tundra_scenes_completion[5] == 1:
+                    self.is_frozen_tundra_finished = True
+                    self.frozen_tundra_scenes_completion = [0,0,0,0,0,0]
+            elif current_menu == GameLoopState.DemonWorldFighting:
+                index_finding = self.demon_world_scenes_completion.index(0)
+                self.demon_world_scenes_completion[index_finding] = 1
+                if self.demon_world_scenes_completion[3] == 1:
+                    self.is_demon_world_finished = True
+                    self.demon_world_scenes_completion = [0,0,0,0]
                 #--- Temp ----:
         elif whose_winning == "enemy":
             if current_menu == GameLoopState.CryptsFighting:
                 self.crypts_scenes_completion = [0,0,0]
             if current_menu == GameLoopState.OrcishValleyFighting:
                 self.orcish_valley_scenes_completion = [0,0,0,0,0]
+            if current_menu == GameLoopState.FrozenTundraFighting:
+                self.frozen_tundra_scenes_completion = [0,0,0,0,0,0]
+            if current_menu == GameLoopState.DemonWorldFighting:
+                self.demon_world_scenes_completion = [0,0,0,0]
      
     def desired_bg_picking(self, assets, current_menu):
         if current_menu == GameLoopState.CryptsFighting:
@@ -311,11 +331,24 @@ class Combat:
             elif self.orcish_valley_scenes_completion[1] == 0:
                 return assets.scaled_orc_2_bg
             elif self.orcish_valley_scenes_completion[2] == 0:
-                return assets.scaled_orc_5_bg
+                return assets.scaled_orc_3_bg
             elif self.orcish_valley_scenes_completion[3] == 0:
                 return assets.scaled_orc_4_bg
             elif self.orcish_valley_scenes_completion[4] == 0:
-                return assets.scaled_orc_3_bg
+                return assets.scaled_orc_5_bg
+        elif current_menu == GameLoopState.FrozenTundraFighting:
+            if self.frozen_tundra_scenes_completion[0] == 0:
+                return assets.scaled_dk_1_bg
+            elif self.frozen_tundra_scenes_completion[1] == 0:
+                return assets.scaled_dk_2_bg
+            elif self.frozen_tundra_scenes_completion[2] == 0:
+                return assets.scaled_dk_3_bg
+            elif self.frozen_tundra_scenes_completion[3] == 0:
+                return assets.scaled_dk_4_bg
+            elif self.frozen_tundra_scenes_completion[4] == 0:
+                return assets.scaled_dk_5_bg
+            elif self.frozen_tundra_scenes_completion[5] == 0:
+                return assets.scaled_dk_6_bg
     
     def desired_enemy_picking(self, assets, current_menu):
         if current_menu == GameLoopState.CryptsFighting:
@@ -336,6 +369,19 @@ class Combat:
                 return assets.scaled_orc_4
             elif self.orcish_valley_scenes_completion[4] == 0:
                 return assets.scaled_orc_5
+        elif current_menu == GameLoopState.FrozenTundraFighting:
+            if self.frozen_tundra_scenes_completion[0] == 0:
+                return assets.scaled_dk_1
+            elif self.frozen_tundra_scenes_completion[1] == 0:
+                return assets.scaled_dk_2
+            elif self.frozen_tundra_scenes_completion[2] == 0:
+                return assets.scaled_dk_3
+            elif self.frozen_tundra_scenes_completion[3] == 0:
+                return assets.scaled_dk_4
+            elif self.frozen_tundra_scenes_completion[4] == 0:
+                return assets.scaled_dk_5
+            elif self.frozen_tundra_scenes_completion[5] == 0:
+                return assets.scaled_dk_6
     
     def returning_to_town_after_combat_conclusion(self):
         if self.combat_finished == True:
@@ -354,8 +400,13 @@ class Combat:
         return whose_turn  
 
     def get_updated_hero_stats(self):
-        return self.hero_current_hp  
-    
+        return self.hero_current_hp
+
+    def get_updated_world_completion(self):
+        world_completion_tracking = {"crypts_beaten": self.is_crypts_finished, "orcish_valley_beaten": self.is_orcish_valley_finished,
+                           "frozen_tundra_beaten": self.is_frozen_tundra_finished, "demon_world_beaten": self.is_demon_world_finished}  
+        return world_completion_tracking
+
 def exit_game_actions(screen, assets):
     screen.blit(assets.scaled_exit_game_bg[0], assets.scaled_exit_game_bg[1])
     pygame.display.flip()
@@ -592,6 +643,13 @@ class Assets:
         self.raw_orc_3_bg = pygame.image.load('assets/painted/orc_bg_2.jpg')
         self.raw_orc_4_bg = pygame.image.load('assets/painted/orc_bg_3.jpg')
         self.raw_orc_5_bg = pygame.image.load('assets/painted/orc_bg_4.jpg')
+        #--- For Frozen Tundra:
+        self.raw_dk_0_bg = pygame.image.load('assets/painted/dk_bg_0.jpg')
+        self.raw_dk_1_bg = pygame.image.load('assets/painted/dk_bg_1.jpg')
+        self.raw_dk_2_bg = pygame.image.load('assets/painted/dk_bg_2.jpg')
+        self.raw_dk_3_bg = pygame.image.load('assets/painted/dk_bg_3.jpg')
+        self.raw_dk_4_bg = pygame.image.load('assets/painted/dk_bg_4.jpg')
+        self.raw_dk_5_bg = pygame.image.load('assets/painted/dk_bg_5.jpg')
 
     def background_imgs_size_change(self):
         #>>>>>> Rescaling: <<<<<<
@@ -618,6 +676,13 @@ class Assets:
         self.scaled_orc_3_bg = self.scaling_bg_images(self.raw_orc_3_bg)
         self.scaled_orc_4_bg = self.scaling_bg_images(self.raw_orc_4_bg)
         self.scaled_orc_5_bg = self.scaling_bg_images(self.raw_orc_5_bg)
+        #--- For Frozen Tundra:
+        self.scaled_dk_1_bg = self.scaling_bg_images(self.raw_dk_0_bg)
+        self.scaled_dk_2_bg = self.scaling_bg_images(self.raw_dk_1_bg)
+        self.scaled_dk_3_bg = self.scaling_bg_images(self.raw_dk_2_bg)
+        self.scaled_dk_4_bg = self.scaling_bg_images(self.raw_dk_3_bg)
+        self.scaled_dk_5_bg = self.scaling_bg_images(self.raw_dk_4_bg)
+        self.scaled_dk_6_bg = self.scaling_bg_images(self.raw_dk_5_bg)
 
     def character_imgs_init(self):
         #--- Player:
@@ -633,6 +698,13 @@ class Assets:
         self.raw_orc_4 = pygame.image.load('assets/painted/transparent/orc_3.png')
         self.raw_orc_5 = pygame.image.load('assets/painted/transparent/orc_4.png')
         self.raw_orc_6 = pygame.image.load('assets/painted/transparent/orc_5.png')
+        #--- For Frozen Tundra:
+        self.raw_dk_1 = pygame.image.load('assets/painted/transparent/dk_0.png')
+        self.raw_dk_2 = pygame.image.load('assets/painted/transparent/dk_1.png')
+        self.raw_dk_3 = pygame.image.load('assets/painted/transparent/dk_2.png')
+        self.raw_dk_4 = pygame.image.load('assets/painted/transparent/dk_3.png')
+        self.raw_dk_5 = pygame.image.load('assets/painted/transparent/dk_4.png')
+        self.raw_dk_6 = pygame.image.load('assets/painted/transparent/dk_5.png')
 
     def character_imgs_size_change(self):
         #>>>>>> Rescaling: <<<<<<
@@ -648,6 +720,13 @@ class Assets:
         self.scaled_orc_4 = self.scaling_most_characters(self.raw_orc_4)
         self.scaled_orc_5 = self.scaling_most_characters(self.raw_orc_5)
         self.scaled_orc_6 = self.scaling_most_characters(self.raw_orc_6)
+        #--- For Frozen Tundra:
+        self.scaled_dk_1 = self.scaling_most_characters(self.raw_dk_1)
+        self.scaled_dk_2 = self.scaling_most_characters(self.raw_dk_2)
+        self.scaled_dk_3 = self.scaling_most_characters(self.raw_dk_3)
+        self.scaled_dk_4 = self.scaling_most_characters(self.raw_dk_4)
+        self.scaled_dk_5 = self.scaling_most_characters(self.raw_dk_5)
+        self.scaled_dk_6 = self.scaling_most_characters(self.raw_dk_6)
 
     def attack_effect_imgs_init_and_size_change(self):
         #--- Attacks:
@@ -699,7 +778,7 @@ def main():
     hero_total_hp = 300
     hero_current_hp = 300
     hero_hp_for_char_screen = f"{hero_current_hp}/{hero_total_hp}"
-    hero_damage = 10
+    hero_damage = 50
     hero_defence = 10
     hero_unsed_stat_points = 0
     hero_vitality = 0
@@ -722,10 +801,12 @@ def main():
     #>>>>>> End - Variables <<<<<<
 
     #>>>>>> Game Progresion Switches <<<<<<
-    is_crypts_finished = False
-    is_orcish_valley_finished = False
+    is_crypts_finished = True
+    is_orcish_valley_finished = True
     is_frozen_tundra_finished = False
     is_demon_world_finished = False
+    world_completion_tracking = {"crypts_beaten": False, "orcish_valley_beaten": False,
+                              "frozen_tundra_beaten": False, "demon_world_beaten": False}
     #attack_turn = 0
     #>>>>>> End - Game Progresion Switches <<<<<<  
 
@@ -736,8 +817,11 @@ def main():
     combat_instance = Combat(screen, enemy_current_hp, hero_current_hp, hero_damage, enemy_damage,
                              hero_defence, enemy_defence, assets.scaled_player_attack_slash,
                              assets.scaled_enemy_attack_slash, hero_total_hp, enemy_total_hp,
-                             is_crypts_finished, is_orcish_valley_finished, assets, color_black, color_red,
-                             color_white, color_yellow, color_green, state)
+                             world_completion_tracking["crypts_beaten"], world_completion_tracking["orcish_valley_beaten"],
+                             world_completion_tracking["frozen_tundra_beaten"], world_completion_tracking["demon_world_beaten"],
+                             assets, color_black, color_red, color_white, color_yellow, color_green, state)
+    #Game menu/scenes changing/control:
+    current_menu = GameLoopState.MainMenu
     #>>>>>> End - Instances <<<<<<
 
     #>>>>>> Dictionaries <<<<<<
@@ -755,8 +839,6 @@ def main():
     program_running_loop = True
     #Music on/off:
     music_playing = True
-    #Game menu/scenes changing/control:
-    current_menu = GameLoopState.MainMenu
     #>>>>>> End - Loops <<<<<<
 
     #>>>>>> Time/FPS tracking/settting <<<<<<
@@ -806,23 +888,22 @@ def main():
                     for (text_item, menu_state) in value:
                         if text_item.is_mouse_over(m_c_p):
                             current_menu = menu_state
-                            print(hero_current_hp)
                 else:
                     for (text_item, menu_state) in state.battle_screen_text_items[:5]:
                         if text_item.is_mouse_over(m_c_p):
-                            if menu_state == GameLoopState.OrcishValleyFighting and is_crypts_finished == False:
+                            if menu_state == GameLoopState.OrcishValleyFighting and world_completion_tracking["crypts_beaten"] == False:
                                 current_menu = GameLoopState.TownBattle
-                            elif menu_state == GameLoopState.FrozenTundraFighting and is_orcish_valley_finished == False:
+                            elif menu_state == GameLoopState.FrozenTundraFighting and world_completion_tracking["orcish_valley_beaten"] == False:
                                 current_menu = GameLoopState.TownBattle
-                            elif menu_state == GameLoopState.DemonWorldFighting and is_frozen_tundra_finished == False:
+                            elif menu_state == GameLoopState.DemonWorldFighting and world_completion_tracking["frozen_tundra_beaten"] == False:
                                 current_menu = GameLoopState.TownBattle
                             else:
                                 current_menu = menu_state
                     combat_instance.update(mp, current_menu)
             #--- All fights logic and blitting -----------------------------------------------<<<<<<
             if event.type == my_event:
-                #--- Crypts fighting ---
-                if current_menu == GameLoopState.CryptsFighting or current_menu == GameLoopState.OrcishValleyFighting:
+                if (current_menu == GameLoopState.CryptsFighting or current_menu == GameLoopState.OrcishValleyFighting or 
+                    current_menu == GameLoopState.FrozenTundraFighting or current_menu == GameLoopState.DemonWorldFighting):
                     if (current_time - start_time) >= 5:
                         #resseting start time value:
                         start_time = pygame.time.get_ticks()    
@@ -832,6 +913,7 @@ def main():
                             if combat_instance.returning_to_town_after_combat_conclusion() == True:
                                 hero_current_hp = combat_instance.get_updated_hero_stats()
                                 state.update_char_screen_stats_texts(hero_current_hp, hero_total_hp)
+                                world_completion_tracking = combat_instance.get_updated_world_completion()
                                 current_menu = GameLoopState.TownMainMenu                    
                         elif combat_instance.main_game_loop_attack_turn_switcher() == True:
                             combat_instance.all_characters_combat_movement_blitting('enemy', state.hp_bars_text_items[0],
@@ -839,10 +921,11 @@ def main():
                             if combat_instance.returning_to_town_after_combat_conclusion() == True:
                                 hero_current_hp = combat_instance.get_updated_hero_stats()
                                 state.update_char_screen_stats_texts(hero_current_hp, hero_total_hp)
+                                world_completion_tracking = combat_instance.get_updated_world_completion()
                                 current_menu = GameLoopState.TownMainMenu
-        redraw_screen(current_menu, music_playing, screen, mp, assets, state, is_crypts_finished,
-                  is_orcish_valley_finished, is_frozen_tundra_finished, is_demon_world_finished,
-                  r_0_0)
+        redraw_screen(current_menu, music_playing, screen, mp, assets, state, world_completion_tracking["crypts_beaten"],
+                  world_completion_tracking["orcish_valley_beaten"], world_completion_tracking["frozen_tundra_beaten"],
+                  world_completion_tracking["demon_world_beaten"], r_0_0)
         pygame.display.flip()
     #>>>>>> End - Programs logic Loop <<<<<<
 if __name__ == "__main__":
