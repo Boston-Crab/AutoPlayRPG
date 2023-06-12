@@ -41,9 +41,9 @@ import pygame
 pygame.init()
 
 # Set the dimensions of the window
-window_x = 500
-window_y = 500
-window = pygame.display.set_mode((window_x, window_y))
+window_width = 500
+window_height = 500
+window = pygame.display.set_mode((window_width, window_height))
 
 white = (255, 255, 255)
 black = (0, 0, 0)
@@ -55,50 +55,58 @@ text_surface = font.render("Hello, World!", True, black)
 text_size = text_surface.get_size()
 
 # Set the position to blit the text
-text_position = (((window_x - text_size[0])//2), 100)
+text_position = (((window_width - text_size[0])//2), 100)
 
 class Widget():
 
     def widget_blit():
         print("aaaa")
 
-class VerticalLayoutContainer:
+class TextWidget(Widget):
 
-    def __init__(self, window, window_x, window_y):
+    def widget_blit():
+        pass
+
+
+class VerticalLayoutContainer(Widget):
+
+    def __init__(self, window, window_width, window_height):
         self.widgets = []
         self.window = window
-        self.window_x = window_x
-        self.window_y = window_y
+        self.window_width = window_width
+        self.window_height = window_height
         self.y_distance_between_widgets = 0
 
     def create_and_add_widget(self, text):
         widget = font.render(text, True, black)
         text_size = widget.get_size()
         print(text_size)
-        self.aligning_widgets(self.window_x, self.window_y, text_size[0], text_size[1])
+        self.aligning_widgets(self.window_width, self.window_height, text_size[0], text_size[1])
         ready_widget = [widget, self.aligned_widget_coord]
         self.widgets.append(ready_widget)
 
-    def widget_horizontal_aligment(self, window_x, text_x):
-        self.widget_position_x = ((window_x - text_x)//2)
+    def widget_horizontal_aligment(self, window_width, text_x):
+        self.widget_position_x = ((window_width - text_x)//2)
     
-    def widget_vertical_aligment(self, window_y, text_y):
-        self.widget_position_y = (((window_y - text_y)//2) + self.y_distance_between_widgets)
+    def widget_vertical_aligment(self, window_height, text_y):
+        self.widget_position_y = (((window_height - text_y)//2) + self.y_distance_between_widgets)
         self.y_distance_between_widgets = self.y_distance_between_widgets + 30
 
-    def aligning_widgets(self, window_x, window_y, text_x, text_y):
-        self.widget_horizontal_aligment(window_x, text_x)
-        self.widget_vertical_aligment(window_y, text_y)
+    def aligning_widgets(self, window_width, window_height, text_x, text_y):
+        self.widget_horizontal_aligment(window_width, text_x)
+        self.widget_vertical_aligment(window_height, text_y)
         self.aligned_widget_coord = (self.widget_position_x,self.widget_position_y)
     
     def widgets_blit(self):
         for i in self.widgets:
             self.window.blit(i[0],i[1])
 
-vlc = VerticalLayoutContainer(window, window_x, window_y)
-vlc.create_and_add_widget("Hello World")
-vlc.create_and_add_widget("Lobby")
-vlc.create_and_add_widget("Random Number Generator")
+vlc = VerticalLayoutContainer(window, window_width, window_height)
+
+tx0 = TextWidget("Hello World")
+tx1 = TextWidget("Random Number Generator")
+vlc.add_widget(tx0)
+vlc.add_widget(tx1)
 
 running = True
 while running:
