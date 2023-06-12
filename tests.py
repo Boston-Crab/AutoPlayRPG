@@ -753,6 +753,23 @@ class Assets:
         new_size_and_rect_in_a_lists = [changed_size, image_rect]
         return new_size_and_rect_in_a_lists
 
+class Widget:
+
+    def blit(self):
+        print("a")
+
+class VerticalLayoutContainer(Widget):
+
+    def __init__(self):
+        self.widgets = []
+
+    def add_widget(self, widget):
+        self.widgets.append(widget)
+
+    def blit(self):
+        for widget in self.widgets:
+            widget.blit()
+
 #>>>>>> End - Custom Classes <<<<<< 
 def main():
     pygame.init()
