@@ -4,6 +4,8 @@ import pygame
 import time
 import pygame.mixer
 from enum import Enum, auto
+import random
+from dungeon_levels import DungeonLevels
 
 #>>>>>> Custom Functions <<<<<<
 def redraw_screen(current_menu, music_playing, screen, mp, assets, state, is_crypts_finished,
@@ -15,6 +17,9 @@ def redraw_screen(current_menu, music_playing, screen, mp, assets, state, is_cry
     #New game confirmation screen:
     elif current_menu == GameLoopState.NewGame:
         state.new_game_confirmation_screen_blit(mp)
+    #Load Game:
+    elif current_menu == GameLoopState.DunLevel1 or current_menu == GameLoopState.DunLevel2:
+        state.dungeon_blit()
     #About screen:
     elif current_menu == GameLoopState.AboutGame:
         state.about_screen_blit(mp)
@@ -70,7 +75,7 @@ class Combat:
         self.crypts_scenes_completion = [0,0,0]
         self.orcish_valley_scenes_completion = [0,0,0,0,0]
         self.frozen_tundra_scenes_completion = [0,0,0,0,0,0]
-        self.demon_world_scenes_completion = [0,0,0,0]
+        self.demon_world_scenes_completion = [0,0,0,0,0]
         self.is_crypts_finished = is_crypts_finished
         self.is_orcish_valley_finished = is_orcish_valley_finished
         self.is_frozen_tundra_finished = is_frozen_tundra_finished
@@ -303,9 +308,9 @@ class Combat:
             elif current_menu == GameLoopState.DemonWorldFighting:
                 index_finding = self.demon_world_scenes_completion.index(0)
                 self.demon_world_scenes_completion[index_finding] = 1
-                if self.demon_world_scenes_completion[3] == 1:
+                if self.demon_world_scenes_completion[4] == 1:
                     self.is_demon_world_finished = True
-                    self.demon_world_scenes_completion = [0,0,0,0]
+                    self.demon_world_scenes_completion = [0,0,0,0,0]
                 #--- Temp ----:
         elif whose_winning == "enemy":
             if current_menu == GameLoopState.CryptsFighting:
@@ -349,6 +354,17 @@ class Combat:
                 return assets.scaled_dk_5_bg
             elif self.frozen_tundra_scenes_completion[5] == 0:
                 return assets.scaled_dk_6_bg
+        elif current_menu == GameLoopState.DemonWorldFighting:
+            if self.demon_world_scenes_completion[0] == 0:
+                return assets.scaled_demon_0_bg
+            elif self.demon_world_scenes_completion[1] == 0:
+                return assets.scaled_demon_1_bg
+            elif self.demon_world_scenes_completion[2] == 0:
+                return assets.scaled_demon_2_bg
+            elif self.demon_world_scenes_completion[3] == 0:
+                return assets.scaled_demon_3_bg
+            elif self.demon_world_scenes_completion[4] == 0:
+                return assets.scaled_demon_4_bg
     
     def desired_enemy_picking(self, assets, current_menu):
         if current_menu == GameLoopState.CryptsFighting:
@@ -382,6 +398,17 @@ class Combat:
                 return assets.scaled_dk_5
             elif self.frozen_tundra_scenes_completion[5] == 0:
                 return assets.scaled_dk_6
+        elif current_menu == GameLoopState.DemonWorldFighting:
+            if self.demon_world_scenes_completion[0] == 0:
+                return assets.scaled_demon_1
+            elif self.demon_world_scenes_completion[1] == 0:
+                return assets.scaled_demon_2
+            elif self.demon_world_scenes_completion[2] == 0:
+                return assets.scaled_demon_3
+            elif self.demon_world_scenes_completion[3] == 0:
+                return assets.scaled_demon_4
+            elif self.demon_world_scenes_completion[4] == 0:
+                return assets.scaled_demon_5
     
     def returning_to_town_after_combat_conclusion(self):
         if self.combat_finished == True:
@@ -418,16 +445,17 @@ def exit_game_actions(screen, assets):
 #>>>>>> End - Custom Functions <<<<<<
 
 #>>>>>> Custom Classes <<<<<<
-class ScreenBlittedState:
+class ScreenBlittedState(DungeonLevels):
 
     def __init__(self, screen, assets, hero_level, hero_exp_formated, hero_hp_for_char_screen, hero_damage, 
                  hero_defence, hero_unsed_stat_points, hero_vitality, hero_strength):
+        super().__init__()
         self.screen = screen
         self.assets = assets
         self.hero_hp_for_char_screen = hero_hp_for_char_screen
         self.back_text_for_many_places = MenuText("BACK", 170,720, assets.font_72)
         self.title_screen_text_items = [(MenuText("NEW GAME", 100,200, assets.font_72), GameLoopState.NewGame),
-                                        (MenuText("??????????", 88,259, assets.font_72), GameLoopState.MainMenu), #Supose to be "LOAD GAME"
+                                        (MenuText("??????????", 88,259, assets.font_72), GameLoopState.DunLevel1), #Supose to be "LOAD GAME"
                                         (MenuText("ABOUT", 154,318, assets.font_72), GameLoopState.AboutGame),
                                         (MenuText("EXIT", 179,377, assets.font_72), GameLoopState.Exit)]
         self.new_game_screen_text_items = [(MenuText("START NEW GAME?", 33,200, assets.font_62), GameLoopState.NewGame), 
@@ -481,8 +509,7 @@ class ScreenBlittedState:
 
     def title_screen_blit(self, mp):
             self.screen.blit(self.assets.scaled_main_menu_bg[0], self.assets.scaled_main_menu_bg[1]) #Background
-            self.blit_text_items(self.title_screen_text_items, mp) #Texts
-    
+            self.blit_text_items(self.title_screen_text_items, mp) #Texts   
     def new_game_confirmation_screen_blit(self, mp):
         self.screen.blit(self.assets.scaled_main_menu_bg[0], self.assets.scaled_main_menu_bg[1]) #Background
         self.blit_text_items(self.new_game_screen_text_items, mp) #Texts
@@ -536,6 +563,60 @@ class ScreenBlittedState:
         self.character_screen_text_items[self.hero_hp_for_char_screen_index] = (MenuText(str(self.hero_hp_for_char_screen), 300,476, self.assets.font_40), 
                                                 GameLoopState.TownCharacter)
 
+    def dungeon_blit(self):
+        self.dungeon_blit_x = 0
+        self.dungeon_blit_y = 0
+        #for i in range(len(self.dungeon_fog_of_war)):
+        #    if self.dungeon_fog_of_war[i] == 3:
+        #        for f in range(4,15):
+        #           self.dungeon_fog_of_war[i+f] = 4
+        #        for f in range((17+4),(17+15)):
+        #           self.dungeon_fog_of_war[i+f] = 4
+        #        for f in range((17*2+4),(17*2+15)):
+        #           self.dungeon_fog_of_war[i+f] = 4
+        #        #for f in range((-17+4),(-17+15)):
+        #        #   self.dungeon_fog_of_war[i+f] = 4
+        #        #for f in range((-17*2+4),(-17*2+15)):
+        #        #   self.dungeon_fog_of_war[i+f] = 4
+        for i in self.dungeon_blueprint:
+            if i == 2:
+                self.dungeon_blit_x = 0
+                self.dungeon_blit_y = self.dungeon_blit_y + 49
+            if i == 1:
+                self.screen.blit(self.assets.dungeon_wall_0, (self.dungeon_blit_x,self.dungeon_blit_y))
+                self.dungeon_blit_x = self.dungeon_blit_x + 30
+            elif i == 0:
+                self.screen.blit(self.assets.dungeon_floor_0, (self.dungeon_blit_x,self.dungeon_blit_y))
+                self.dungeon_blit_x = self.dungeon_blit_x + 30
+            elif i == 3:
+                self.screen.blit(self.assets.dungeon_player, (self.dungeon_blit_x,self.dungeon_blit_y))
+                self.dungeon_blit_x = self.dungeon_blit_x + 30
+            elif i == 4:
+                self.screen.blit(self.assets.dungeon_orc_1, (self.dungeon_blit_x,self.dungeon_blit_y))
+                self.dungeon_blit_x = self.dungeon_blit_x + 30
+            elif (i == 5 or i == 11 or i == 12):
+                self.screen.blit(self.assets.dungeon_orc_1, (self.dungeon_blit_x,self.dungeon_blit_y))
+                self.dungeon_blit_x = self.dungeon_blit_x + 30
+            elif i == 6:
+                self.screen.blit(self.assets.dungeon_green_tree_0, (self.dungeon_blit_x,self.dungeon_blit_y))
+                self.dungeon_blit_x = self.dungeon_blit_x + 30
+            elif i == 7:
+                self.screen.blit(self.assets.dungeon_green_tree_1, (self.dungeon_blit_x,self.dungeon_blit_y))
+                self.dungeon_blit_x = self.dungeon_blit_x + 30
+            elif i == 9:
+                self.screen.blit(self.assets.dungeon_wall_0, (self.dungeon_blit_x,self.dungeon_blit_y))
+                self.dungeon_blit_x = self.dungeon_blit_x + 30
+            elif i == 10:
+                self.screen.blit(self.assets.dungeon_portal, (self.dungeon_blit_x,self.dungeon_blit_y))
+                self.dungeon_blit_x = self.dungeon_blit_x + 30
+            elif i == 13:
+                self.screen.blit(self.assets.dungeon_green_tree_2, (self.dungeon_blit_x,self.dungeon_blit_y))
+                self.dungeon_blit_x = self.dungeon_blit_x + 30
+            elif i == 14:
+                self.screen.blit(self.assets.dungeon_chest, (self.dungeon_blit_x,self.dungeon_blit_y))
+                self.dungeon_blit_x = self.dungeon_blit_x + 30
+        #self.dungeon_fog_of_war = list(self.dungeon_blueprint)
+
 class MenuText:
     
     def __init__(self, text, xPos, yPos, font):
@@ -584,6 +665,9 @@ class GameLoopState(Enum):
     OrcishValleyFighting = auto()
     FrozenTundraFighting = auto()
     DemonWorldFighting = auto()
+    #Dungeon levels:
+    DunLevel1 = auto()
+    DunLevel2 = auto()
 
 class Assets:
 
@@ -650,6 +734,22 @@ class Assets:
         self.raw_dk_3_bg = pygame.image.load('assets/painted/dk_bg_3.jpg')
         self.raw_dk_4_bg = pygame.image.load('assets/painted/dk_bg_4.jpg')
         self.raw_dk_5_bg = pygame.image.load('assets/painted/dk_bg_5.jpg')
+        #--- Demon World:
+        self.raw_demon_0_bg = pygame.image.load('assets/painted/dem_bg_0.jpg')
+        self.raw_demon_1_bg = pygame.image.load('assets/painted/dem_bg_1.jpg')
+        self.raw_demon_2_bg = pygame.image.load('assets/painted/dem_bg_2.jpg')
+        self.raw_demon_3_bg = pygame.image.load('assets/painted/dem_bg_3.jpg')
+        self.raw_demon_4_bg = pygame.image.load('assets/painted/dem_bg_4.jpg')
+        #--- Dungeon Floor:
+        self.dungeon_wall_0 = pygame.image.load('assets/for_level_generation/wall_0.png')
+        self.dungeon_wall_wooden_0 = pygame.image.load('assets/for_level_generation/wooden_wall_0.png')
+        self.dungeon_floor_0 = pygame.image.load('assets/for_level_generation/green_floor_borderless_0.png')
+        self.dungeon_green_tree_0 = pygame.image.load('assets/for_level_generation/green_tree_0.png')
+        self.dungeon_green_tree_1 = pygame.image.load('assets/for_level_generation/green_tree_1.png')
+        self.dungeon_green_tree_2 = pygame.image.load('assets/for_level_generation/green_tree_2.png')
+        self.dungeon_portal = pygame.image.load('assets/for_level_generation/portal_0.png')
+        self.dungeon_chest = pygame.image.load('assets/for_level_generation/chest_test.png')
+        self.fog_of_war = pygame.image.load('assets/for_level_generation/fog_of_war.png')
 
     def background_imgs_size_change(self):
         #>>>>>> Rescaling: <<<<<<
@@ -683,6 +783,12 @@ class Assets:
         self.scaled_dk_4_bg = self.scaling_bg_images(self.raw_dk_3_bg)
         self.scaled_dk_5_bg = self.scaling_bg_images(self.raw_dk_4_bg)
         self.scaled_dk_6_bg = self.scaling_bg_images(self.raw_dk_5_bg)
+        #--- Demon World:
+        self.scaled_demon_0_bg = self.scaling_bg_images(self.raw_demon_0_bg)
+        self.scaled_demon_1_bg = self.scaling_bg_images(self.raw_demon_1_bg)
+        self.scaled_demon_2_bg = self.scaling_bg_images(self.raw_demon_2_bg)
+        self.scaled_demon_3_bg = self.scaling_bg_images(self.raw_demon_3_bg)
+        self.scaled_demon_4_bg = self.scaling_bg_images(self.raw_demon_4_bg)
 
     def character_imgs_init(self):
         #--- Player:
@@ -705,6 +811,15 @@ class Assets:
         self.raw_dk_4 = pygame.image.load('assets/painted/transparent/dk_3.png')
         self.raw_dk_5 = pygame.image.load('assets/painted/transparent/dk_4.png')
         self.raw_dk_6 = pygame.image.load('assets/painted/transparent/dk_5.png')
+        #--- For Demon World:
+        self.raw_demon_1 = pygame.image.load('assets/painted/transparent/demon_0.png')
+        self.raw_demon_2 = pygame.image.load('assets/painted/transparent/demon_1.png')
+        self.raw_demon_3 = pygame.image.load('assets/painted/transparent/demon_2.png')
+        self.raw_demon_4 = pygame.image.load('assets/painted/transparent/demon_3.png')
+        self.raw_demon_5 = pygame.image.load('assets/painted/transparent/demon_4.png')
+        #--- Dungeon:
+        self.dungeon_player = pygame.image.load('assets/for_level_generation/dungeon_player_borderless.png')
+        self.dungeon_orc_1 = pygame.image.load('assets/for_level_generation/dungeon_orc_1_borderless.png')
 
     def character_imgs_size_change(self):
         #>>>>>> Rescaling: <<<<<<
@@ -727,6 +842,12 @@ class Assets:
         self.scaled_dk_4 = self.scaling_most_characters(self.raw_dk_4)
         self.scaled_dk_5 = self.scaling_most_characters(self.raw_dk_5)
         self.scaled_dk_6 = self.scaling_most_characters(self.raw_dk_6)
+        #--- Fer Demon World:
+        self.scaled_demon_1 = self.scaling_most_characters(self.raw_demon_1)
+        self.scaled_demon_2 = self.scaling_most_characters(self.raw_demon_2)
+        self.scaled_demon_3 = self.scaling_most_characters(self.raw_demon_3)
+        self.scaled_demon_4 = self.scaling_most_characters(self.raw_demon_4)
+        self.scaled_demon_5 = self.scaling_most_characters(self.raw_demon_5)
 
     def attack_effect_imgs_init_and_size_change(self):
         #--- Attacks:
@@ -753,23 +874,93 @@ class Assets:
         new_size_and_rect_in_a_lists = [changed_size, image_rect]
         return new_size_and_rect_in_a_lists
 
-class Widget:
+class Dungeon(DungeonLevels):
 
-    def blit(self):
-        print("a")
+    def __init__(self, state):
+        super().__init__()
+        self.state = state
+        self.enemy_movement_posibilities = [17, -17, 1, -1]
+        self.combat_init_conditions = [4,5,11,12]
+        self.combat_init_enemy_location = [17, -17, 1, -1]
+        self.enemy_ignores = [1,6,7,4,9,10,5,11,12,13,14]
+        self.player_ignores = [1,6,7,13,14]
 
-class VerticalLayoutContainer(Widget):
+    def moving_all_directions(self, offset_num, who_moves, current_menu):
+        for i in range(len(self.state.dungeon_blueprint)):
+            if self.state.dungeon_blueprint[i] == who_moves:
+                units_location = i
+                break
+        #--- Player Movement:
+        if who_moves == 3:
+            if self.state.dungeon_blueprint[units_location-offset_num] in self.player_ignores:
+                pass
+            else:
+                self.state.dungeon_blueprint[units_location] = 0    
+                self.state.dungeon_blueprint[units_location-offset_num] = 3
+        #--- Enemy Movement:
+        elif (who_moves == 5 or who_moves == 11 or who_moves == 12) and (current_menu == GameLoopState.DunLevel1 or current_menu == GameLoopState.DunLevel2):
+            enemy_desired_location = random.choice(self.enemy_movement_posibilities)
+            if self.state.dungeon_blueprint[units_location-enemy_desired_location] in self.enemy_ignores:
+                pass
+            else:
+                self.state.dungeon_blueprint[units_location] = 0
+                self.state.dungeon_blueprint[units_location-enemy_desired_location] = who_moves
 
-    def __init__(self):
-        self.widgets = []
+    def combat_init_and_level_change_checking(self, current_menu):
+        for i in range(len(self.state.dungeon_blueprint)):
+            if self.state.dungeon_blueprint[i] == 3:
+                #--- Going to Next Level:
+                if self.state.dungeon_blueprint[i+1] == 9:
+                    self.state.dungeon_blueprint[i] = 10
+                    self.state.dungeon_blueprint[i-1] = 3
+                    return GameLoopState.DunLevel2
+                #--- Going to Previous Level:
+                elif self.state.dungeon_blueprint[i-1] == 9:
+                    self.state.dungeon_blueprint[i] = 10
+                    self.state.dungeon_blueprint[i+1] = 3
+                    return GameLoopState.DunLevel1
+                #--- Combat Starting:
+                for o in self.combat_init_enemy_location:
+                    if self.state.dungeon_blueprint[i-o] in self.combat_init_conditions:
+                        return GameLoopState.OrcishValleyFighting
+        return current_menu
+    
+    def dungeon_layout_picking(self, current_menu, state):
+        if current_menu == GameLoopState.DunLevel1:
+            state.dungeon_blueprint = self.dungeon_level_1
+        elif current_menu == GameLoopState.DunLevel2:
+            state.dungeon_blueprint = self.dungeon_level_2
 
-    def add_widget(self, widget):
-        self.widgets.append(widget)
+    def player_moves_to(self, event):
+        if event == pygame.K_UP:
+            return 17
+        elif event == pygame.K_DOWN:
+            return -17
+        elif event == pygame.K_LEFT:
+            return 1
+        elif event == pygame.K_RIGHT:
+            return -1
 
-    def blit(self):
-        for widget in self.widgets:
-            widget.blit()
-
+    def everyone_moving(self, current_menu, combat_instance, mp, how_many_moving, event):
+        current_menu = self.combat_init_and_level_change_checking(current_menu)
+        if current_menu == GameLoopState.OrcishValleyFighting:
+            combat_instance.update(mp, current_menu)
+        self.moving_all_directions(self.player_moves_to(event), 3, current_menu)
+        current_menu = self.combat_init_and_level_change_checking(current_menu)
+        if current_menu == GameLoopState.OrcishValleyFighting:
+            combat_instance.update(mp, current_menu)
+        #Enemy:
+        if how_many_moving == 1 or how_many_moving == 2 or how_many_moving == 3:
+            self.moving_all_directions(0, 5, current_menu)
+        if how_many_moving == 2 or how_many_moving == 3:
+            self.moving_all_directions(0, 11, current_menu)
+        if how_many_moving == 3:
+            self.moving_all_directions(0, 12, current_menu)
+        current_menu = self.combat_init_and_level_change_checking(current_menu)
+        if current_menu == GameLoopState.OrcishValleyFighting:
+            combat_instance.update(mp, current_menu)
+        return current_menu
+#dungeon.everyone_moving(current_menu, combat_instance, mp, 2, event)
 #>>>>>> End - Custom Classes <<<<<< 
 def main():
     pygame.init()
@@ -818,10 +1009,6 @@ def main():
     #>>>>>> End - Variables <<<<<<
 
     #>>>>>> Game Progresion Switches <<<<<<
-    is_crypts_finished = True
-    is_orcish_valley_finished = True
-    is_frozen_tundra_finished = False
-    is_demon_world_finished = False
     world_completion_tracking = {"crypts_beaten": False, "orcish_valley_beaten": False,
                               "frozen_tundra_beaten": False, "demon_world_beaten": False}
     #attack_turn = 0
@@ -837,6 +1024,7 @@ def main():
                              world_completion_tracking["crypts_beaten"], world_completion_tracking["orcish_valley_beaten"],
                              world_completion_tracking["frozen_tundra_beaten"], world_completion_tracking["demon_world_beaten"],
                              assets, color_black, color_red, color_white, color_yellow, color_green, state)
+    dungeon = Dungeon(state)
     #Game menu/scenes changing/control:
     current_menu = GameLoopState.MainMenu
     #>>>>>> End - Instances <<<<<<
@@ -886,6 +1074,13 @@ def main():
                 exit_game_actions(screen, assets)
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 exit_game_actions(screen, assets)
+            #---- Dungeon Movement: ----
+            elif event.type == pygame.KEYDOWN and (event.key == pygame.K_UP or
+                                                   event.key == pygame.K_DOWN or
+                                                   event.key == pygame.K_LEFT or
+                                                   event.key == pygame.K_RIGHT):
+                desired_move_location = event.key
+                current_menu = dungeon.everyone_moving(current_menu, combat_instance, mp, 3, desired_move_location)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 #Mouse clicks tracking:
                 m_c_p = pygame.mouse.get_pos()
@@ -917,6 +1112,9 @@ def main():
                             else:
                                 current_menu = menu_state
                     combat_instance.update(mp, current_menu)
+            #--- Dungeon logic ---------------------------------------------------------------<<<<<<
+            if (current_menu == GameLoopState.DunLevel1 or current_menu == GameLoopState.DunLevel2):
+                dungeon.dungeon_layout_picking(current_menu, state)
             #--- All fights logic and blitting -----------------------------------------------<<<<<<
             if event.type == my_event:
                 if (current_menu == GameLoopState.CryptsFighting or current_menu == GameLoopState.OrcishValleyFighting or 
@@ -940,6 +1138,7 @@ def main():
                                 state.update_char_screen_stats_texts(hero_current_hp, hero_total_hp)
                                 world_completion_tracking = combat_instance.get_updated_world_completion()
                                 current_menu = GameLoopState.TownMainMenu
+        print(current_menu)
         redraw_screen(current_menu, music_playing, screen, mp, assets, state, world_completion_tracking["crypts_beaten"],
                   world_completion_tracking["orcish_valley_beaten"], world_completion_tracking["frozen_tundra_beaten"],
                   world_completion_tracking["demon_world_beaten"], r_0_0)
